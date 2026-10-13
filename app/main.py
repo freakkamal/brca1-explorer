@@ -6,7 +6,7 @@ from typing import Literal
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field, HttpUrl
 
-from app import uniprot
+from app import ncbi, uniprot
 
 
 app = FastAPI(
@@ -52,5 +52,30 @@ def brca1_protein():
     """Retrieve validated human BRCA1 identity from UniProt."""
     try:
         return uniprot.fetch_brca1_protein()
+    except RuntimeError as exc:
+        raise HTTPException(status_code=502, detail=str(exc)) from exc
+class GeneResponse(BaseModel):
+    evidence_type: Literal["retrieved"]
+    source: Literal["NCBI Gene"]
+    gene_id: Literal["672"]
+    gene: Literal["BRCA1"]
+    organism: Literal["Homo sapiens"]
+    taxonomy_id: Literal[9606]
+    record_url: HttpUrl
+    api_url: HttpUrl
+    retrieved_at_utc: datetime
+    response_sha256: str = Field(pattern=r"^[0-9a-f]{64}$")
+
+
+@app.get(
+    "/genes/brca1",
+    response_model=GeneResponse,
+    tags=["Gene evidence"],
+    responses={502: {"description": "NCBI retrieval failed"}},
+)
+def brca1_gene():
+    """Retrieve validated human BRCA1 gene identity from NCBI."""
+    try:
+        return ncbi.fetch_brca1_gene()
     except RuntimeError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
