@@ -106,3 +106,25 @@ or simulated in this starter. Stop after confirming this milestone on your compu
 Implementation references:
 - https://fastapi.tiangolo.com/tutorial/first-steps/
 - https://fastapi.tiangolo.com/tutorial/testing/
+
+## Milestone 2: BRCA1 identity retrieval
+
+Implemented:
+- GET /health: service health check.
+- GET /proteins/brca1: human BRCA1 protein identity from UniProt,
+  accession P38398.
+- GET /genes/brca1: human BRCA1 gene identity from NCBI Gene,
+  gene ID 672.
+- Validation of source identifiers, gene symbol and taxonomy ID.
+- Retrieval timestamps, source URLs and response SHA-256 hashes.
+- Explicit HTTP 502 responses when source retrieval fails.
+
+Validation:
+- 23 automated tests passed on Windows.
+- Both evidence endpoints returned HTTP 200 in manual live checks.
+- Automated source-retrieval tests use mocked responses.
+
+Current limitations:
+- Raw source responses are not yet stored.
+- PubMed retrieval and AI summaries are not yet implemented.
+- This research prototype is not for clinical decisions.
