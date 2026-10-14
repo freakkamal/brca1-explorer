@@ -128,3 +128,26 @@ Current limitations:
 - Raw source responses are not yet stored.
 - PubMed retrieval and AI summaries are not yet implemented.
 - This research prototype is not for clinical decisions.
+## Milestone 3: PubMed literature retrieval
+
+Implemented:
+- GET /literature/brca1 retrieves up to 10 unique PubMed records.
+- Searches BRCA1[Title/Abstract], sorted by relevance.
+- Returns PMIDs, titles, available abstracts and PubMed links.
+- Preserves structured abstract labels and text within XML tags.
+- Keeps articles without abstracts, using abstract: null.
+- Includes separate search and fetch URLs, timestamps and hashes.
+- Returns HTTP 502 when source retrieval fails.
+
+Validation:
+- 40 automated tests passed on Windows.
+- Live retrieval returned 10 unique articles with abstracts.
+- Tests cover duplicate identifiers, missing abstracts, record order,
+  malformed/incomplete responses and endpoint success/failure.
+
+Current limitations:
+- Search ranking does not establish scientific evidence quality.
+- Results are not restricted to human studies.
+- Raw source responses and evidence bundles are not yet saved.
+- AI summaries are not yet implemented.
+- This research prototype is not for clinical decisions.
