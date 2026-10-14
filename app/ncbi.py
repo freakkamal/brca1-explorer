@@ -1,6 +1,7 @@
 """Retrieve and validate the human BRCA1 gene record."""
 
 from datetime import datetime, timezone
+from app.storage import save_raw_response
 import hashlib
 
 import httpx
@@ -60,7 +61,7 @@ def fetch_brca1_gene():
         raise RuntimeError(
             "NCBI returned an invalid or unexpected record."
         ) from exc
-
+    save_raw_response("ncbi_gene", response.content)
     return {
         "evidence_type": "retrieved",
         "source": "NCBI Gene",

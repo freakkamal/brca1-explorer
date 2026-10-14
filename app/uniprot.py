@@ -1,6 +1,7 @@
 """Retrieve and validate the human BRCA1 protein record."""
-
+from app.storage import save_raw_response
 from datetime import datetime, timezone
+
 import hashlib
 
 import httpx
@@ -43,7 +44,11 @@ def fetch_brca1_protein():
         raise RuntimeError(
             "UniProt returned an invalid or unexpected record."
         ) from exc
+    
+    
+    save_raw_response("uniprot", response.content)
 
+    
     return {
         "evidence_type": "retrieved",
         "source": "UniProt",

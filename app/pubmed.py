@@ -1,5 +1,6 @@
 """Search PubMed for BRCA1 article identifiers."""
 from datetime import datetime, timezone
+from app.storage import save_raw_response
 import hashlib
 
 import httpx
@@ -77,7 +78,7 @@ def search_brca1_articles():
         raise RuntimeError(
             "PubMed returned an invalid or unexpected search response."
         ) from exc
-
+    save_raw_response("pubmed_search", response.content)
     return {
         "evidence_type": "retrieved",
         "source": "PubMed",
@@ -210,7 +211,7 @@ def fetch_article_details(pmids):
         raise RuntimeError(
             "PubMed returned invalid or incomplete article data."
         ) from exc
-
+    save_raw_response("pubmed_fetch", response.content)
     return {
         "source": "PubMed",
         "articles": [records[pmid] for pmid in requested],
