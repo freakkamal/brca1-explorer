@@ -184,3 +184,32 @@ Current limitations:
 - Git provenance does not capture Python dependency versions.
 - AI summaries and a user-facing web interface are not implemented.
 - This research prototype is not for clinical decisions.
+
+## Milestone 5: Readable evidence reports
+
+Added Markdown report generation from a saved BRCA1 evidence bundle.
+
+Capabilities:
+- Present gene and protein identity with source links.
+- Include PubMed titles, abstracts, and article links.
+- Show retrieval dates and recorded Git provenance.
+- Verify referenced raw files against their recorded SHA-256 hashes.
+- Reject missing or corrupted raw files and paths outside data/raw.
+- Handle empty article lists and missing abstracts.
+- Run without an AI API or API credits.
+
+Generate a report:
+
+    .venv\Scripts\python.exe -m app.report data\bundles\<bundle-filename>.json
+
+Replace <bundle-filename> with the name of an existing bundle.
+Reports are saved under data/reports/.
+
+Validation:
+- 57 automated tests passed.
+- A report was successfully generated from a saved evidence bundle.
+
+Limitations:
+- Reports present retrieved evidence; they are not AI summaries.
+- Checksum verification checks file integrity, not scientific accuracy.
+- Reports are for research use, not clinical decisions.
