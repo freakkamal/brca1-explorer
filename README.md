@@ -151,3 +151,36 @@ Current limitations:
 - Raw source responses and evidence bundles are not yet saved.
 - AI summaries are not yet implemented.
 - This research prototype is not for clinical decisions.
+
+
+## Milestone 4: Saved evidence bundles
+
+Implemented:
+- Saves validated source-response bytes under data/raw/.
+- Names raw files using their SHA-256 checksums.
+- Reuses identical responses and detects corrupted existing files.
+- Creates a combined gene, protein and literature JSON bundle.
+- Verifies referenced raw files before saving the bundle.
+- Records retrieval timestamps, Git commit and working-tree status.
+- Uses atomic file replacement to avoid publishing partial files.
+
+Create a bundle:
+    .venv\Scripts\python.exe -m app.evidence
+
+Validation:
+- 51 automated tests passed on Windows.
+- Live retrieval saved and verified all four source responses.
+- First bundle contained 10 articles and four raw-file references.
+- Its saved-file checksum matched the reported checksum.
+- The generating code was committed with a clean working tree.
+
+Storage:
+- Bundles are saved under data/bundles/.
+- Keep bundles together with their referenced data/raw/ files.
+- The data folder is excluded from Git and needs a separate backup.
+
+Current limitations:
+- Bundle creation is available through the command line.
+- Git provenance does not capture Python dependency versions.
+- AI summaries and a user-facing web interface are not implemented.
+- This research prototype is not for clinical decisions.
