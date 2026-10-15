@@ -213,3 +213,34 @@ Limitations:
 - Reports present retrieved evidence; they are not AI summaries.
 - Checksum verification checks file integrity, not scientific accuracy.
 - Reports are for research use, not clinical decisions.
+
+## Milestone 6: Local evidence viewer
+
+Added a browser page at / for viewing saved BRCA1 evidence.
+
+Capabilities:
+- Display the saved bundle with the latest file modification time.
+- Show gene and protein identity with source links.
+- Display PubMed article titles and expandable abstracts.
+- Verify raw-file checksums before displaying evidence.
+- Show a helpful message when no bundle exists.
+- Escape article text for safe HTML display.
+- Read saved evidence without paid AI calls or new retrieval requests.
+
+Start the local server:
+
+    .venv\Scripts\python.exe -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000
+
+Open http://127.0.0.1:8000 in a browser.
+
+Validation:
+- 61 automated tests passed.
+- Browser page manually opened and evidence displayed successfully.
+- Tests cover normal display, absent bundles, corrupted raw evidence,
+  and HTML escaping.
+
+Limitations:
+- Intended for local use; authentication is not implemented.
+- File modification time determines which bundle is displayed.
+- Retrieved evidence is not an AI summary or scientific quality assessment.
+- Research use only, not for clinical decisions.
