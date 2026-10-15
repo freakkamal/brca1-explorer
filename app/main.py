@@ -128,3 +128,8 @@ def brca1_literature():
         return pubmed.fetch_brca1_literature()
     except RuntimeError as exc:
         raise HTTPException(status_code=502, detail=str(exc)) from exc
+
+
+from app.web import router as web_router
+
+app.include_router(web_router)
