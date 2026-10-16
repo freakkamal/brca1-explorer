@@ -310,3 +310,101 @@ def test_download_rejects_path_outside_bundle_folder(viewer_data):
     assert response.status_code == 404
     assert "Bundle not found" in response.text
     assert "content-disposition" not in response.headers
+
+
+
+@pytest.fixture
+def displayed_summary(viewer_data):
+    """Import a summary linked to the temporary viewer bundle."""
+    import hashlib
+    from app import summaries
+
+    bundle, bundle_path, raw_path, save = viewer_data
+    bundle["bundle_id"] = "viewer-summary-test"
+    save()
+
+    digest = hashlib.sha256(bundle_path.read_bytes()).hexdigest()
+    draft = storage.PROJECT_ROOT / "summary-draft.md"
+    draft.write_text(
+        "A test interpretation. PMID: 123456",
+        encoding="utf-8",
+    )
+
+    summary_path = summaries.import_summary(
+        bundle_path, draft, digest
+    )
+    return bundle_path, summary_path
+
+
+def test_viewer_displays_imported_summary(displayed_summary):
+    with TestClient(app) as client:
+        response = client.get("/")
+
+    assert response.status_code == 200
+    assert "Imported AI summary" in response.text
+    assert "Not yet reviewed" in response.text
+    assert "A test interpretation." in response.text
+    assert "Cited articles:" in response.text
+    assert (
+        'href="https://pubmed.ncbi.nlm.nih.gov/123456/"'
+        in response.text
+    )
+
+
+def test_viewer_handles_no_imported_summary(viewer_data):
+    with TestClient(app) as client:
+        response = client.get("/")
+
+    assert response.status_code == 200
+    assert "No imported summary is saved for this bundle." in response.text
+    assert "Example BRCA1 study" in response.text
+
+
+def test_viewer_blocks_changed_summary_text(displayed_summary):
+    bundle_path, summary_path = displayed_summary
+    saved = json.loads(summary_path.read_text(encoding="utf-8"))
+    saved["summary_markdown"] = "Changed text. PMID: 123456"
+    summary_path.write_text(json.dumps(saved), encoding="utf-8")
+
+    with TestClient(app) as client:
+        response = client.get("/")
+
+    assert response.status_code == 200
+    assert "AI summary unavailable" in response.text
+    assert "Summary text checksum mismatch." in response.text
+    assert "Changed text." not in response.text
+    assert "Example BRCA1 study" in response.text
+
+
+def test_viewer_does_not_attach_summary_to_changed_bundle(displayed_summary):
+    bundle_path, summary_path = displayed_summary
+    bundle = json.loads(bundle_path.read_text(encoding="utf-8"))
+    bundle["bundle_id"] = "different-bundle"
+    bundle_path.write_text(json.dumps(bundle), encoding="utf-8")
+
+    with TestClient(app) as client:
+        response = client.get("/")
+
+    assert response.status_code == 200
+    assert "No imported summary is saved for this bundle." in response.text
+    assert "A test interpretation." not in response.text
+
+
+def test_viewer_escapes_imported_summary_html(displayed_summary):
+    import hashlib
+
+    bundle_path, summary_path = displayed_summary
+    saved = json.loads(summary_path.read_text(encoding="utf-8"))
+    summary_text = "<script>alert('test')</script> PMID: 123456"
+    saved["summary_markdown"] = summary_text
+    saved["summary_sha256"] = hashlib.sha256(
+        summary_text.encode("utf-8")
+    ).hexdigest()
+    summary_path.write_text(json.dumps(saved), encoding="utf-8")
+
+    with TestClient(app) as client:
+        response = client.get("/")
+
+    assert response.status_code == 200
+    assert "<script>" not in response.text
+    assert "&lt;script&gt;" in response.text

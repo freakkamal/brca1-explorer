@@ -1,6 +1,7 @@
 """Local browser viewer for saved BRCA1 evidence."""
 
 import json
+import hashlib
 from html import escape
 
 from fastapi import APIRouter
@@ -250,7 +251,7 @@ PubMed PMID: {text(article.pmid)}</a></p>
 </details>
 </article>
 """
-
+        body += summary_section(bundle_path)
         body += '<p><a href="/docs">Open API documentation</a></p>'
         return page(body)
 
@@ -302,4 +303,87 @@ def download_report(bundle: str):
             '<p><a href="/">Return to the viewer</a></p>'
             "</section>",
             status_code=500,
+        )
+
+
+def summary_section(bundle_path):
+    """Display the latest imported summary for this exact bundle."""
+    bundle_digest = hashlib.sha256(bundle_path.read_bytes()).hexdigest()
+    directory = storage.PROJECT_ROOT / "data/summaries"
+    candidates = list(
+        directory.glob(f"brca1-{bundle_digest}-*.json")
+    )
+
+    if not candidates:
+        return (
+            "<section><h2>AI summary</h2>"
+            "<p>No imported summary is saved for this bundle.</p>"
+            "</section>"
+        )
+
+    try:
+        summary_path = max(
+            candidates,
+            key=lambda path: (path.stat().st_mtime_ns, path.name),
+        )
+        saved = json.loads(summary_path.read_text(encoding="utf-8"))
+
+        if not isinstance(saved, dict):
+            raise ValueError("Invalid summary record.")
+
+        if saved["bundle_sha256"] != bundle_digest:
+            raise ValueError("Summary belongs to a different bundle.")
+
+        summary_text = saved["summary_markdown"]
+        if not isinstance(summary_text, str) or not summary_text.strip():
+            raise ValueError("Summary text is missing.")
+
+        actual_digest = hashlib.sha256(
+            summary_text.encode("utf-8")
+        ).hexdigest()
+        if actual_digest != saved["summary_sha256"]:
+            raise ValueError("Summary text checksum mismatch.")
+
+        # Recheck recognized citations before displaying source links.
+        from app.summaries import extract_pmids
+
+        bundle_data = json.loads(bundle_path.read_bytes())
+        allowed_pmids = {
+            str(article["pmid"])
+            for article in bundle_data["literature"]["articles"]
+        }
+        cited_pmids = extract_pmids(summary_text)
+
+        if not cited_pmids or not set(cited_pmids).issubset(allowed_pmids):
+            raise ValueError("Summary citations do not match this bundle.")
+
+        links = " · ".join(
+            f'<a href="https://pubmed.ncbi.nlm.nih.gov/{pmid}/">'
+            f"PMID {pmid}</a>"
+            for pmid in cited_pmids
+        )
+
+        return f"""
+<section>
+<h2>Imported AI summary</h2>
+<p><strong>Not yet reviewed</strong></p>
+<p>Origin: {text(saved["origin"])}</p>
+<p class="meta">Imported: {text(saved["imported_at_utc"])}</p>
+<p>Showing the most recently modified summary for this exact bundle.</p>
+<p>This is AI-generated interpretation, separate from retrieved evidence.
+Citation membership checks do not establish scientific accuracy.</p>
+<details>
+<summary>Read imported summary</summary>
+<div class="abstract">{text(summary_text)}</div>
+</details>
+<p><strong>Cited articles:</strong> {links}</p>
+</section>
+"""
+
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        return (
+            "<section><h2>AI summary unavailable</h2>"
+            f"<p>{text(exc)}</p>"
+            "<p>The imported summary could not be validated.</p>"
+            "</section>"
         )
