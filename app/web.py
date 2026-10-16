@@ -54,6 +54,22 @@ a { color: #075bb5; }
     border-radius: 8px;
 }
 .meta { color: #465a70; overflow-wrap: anywhere; }
+select {
+    display: block;
+    width: 100%;
+    margin: 8px 0 16px;
+    padding: 10px;
+    font: inherit;
+}
+button {
+    padding: 10px 18px;
+    border: 0;
+    border-radius: 6px;
+    background: #075bb5;
+    color: white;
+    font: inherit;
+    cursor: pointer;
+}
 </style>
 </head>
 <body>
@@ -76,8 +92,8 @@ This page displays saved evidence, not an AI-generated summary.
 
 
 @router.get("/", response_class=HTMLResponse, tags=["Local viewer"])
-def home():
-    """Display the most recently modified saved evidence bundle."""
+def home(bundle: str | None = None):
+    """Display a selected bundle, or the latest one by default."""
     try:
         bundle_directory = storage.PROJECT_ROOT / "data" / "bundles"
         candidates = [
@@ -86,7 +102,7 @@ def home():
             if path.is_file()
         ]
 
-        if not candidates:
+        if not candidates and bundle is None:
             return page(
                 "<section><h2>No saved bundles yet</h2>"
                 "<p>Create an evidence bundle from Command Prompt:</p>"
@@ -94,36 +110,83 @@ def home():
                 "<p>Then refresh this page.</p></section>"
             )
 
-        bundle_path = max(
-            candidates,
+        candidates.sort(
             key=lambda path: (path.stat().st_mtime_ns, path.name),
+            reverse=True,
         )
-        bundle = json.loads(bundle_path.read_bytes())
+        available = {path.name: path for path in candidates}
 
-        if bundle.get("target") != "BRCA1":
+        if bundle is None:
+            bundle_path = candidates[0]
+        elif bundle in available:
+            bundle_path = available[bundle]
+        else:
+            return page(
+                "<section><h2>Bundle not found</h2>"
+                "<p>The requested bundle is not available.</p>"
+                '<p><a href="/">Return to the latest bundle</a></p>'
+                "</section>",
+                status_code=404,
+            )
+
+        options = []
+        for candidate in candidates:
+            selected = (
+                " selected" if candidate == bundle_path else ""
+            )
+            options.append(
+                f'<option value="{text(candidate.name)}"{selected}>'
+                f"{text(candidate.name)}</option>"
+            )
+
+        selector = (
+            "<section><h2>Choose an evidence bundle</h2>"
+            '<form action="/" method="get">'
+            '<label for="bundle">Saved bundle</label>'
+            '<select id="bundle" name="bundle">'
+            + "".join(options)
+            + "</select>"
+            '<button type="submit">View bundle</button>'
+            "</form>"
+            "<p>Bundles are listed by file modification time, "
+            "newest first.</p>"
+            '<p><a href="/">View latest bundle</a></p>'
+            "</section>"
+        )
+
+        selection_note = (
+            "Showing the latest bundle by file modification time."
+            if bundle is None
+            else "Showing the bundle you selected."
+        )
+
+        data = json.loads(bundle_path.read_bytes())
+
+        if not isinstance(data, dict) or data.get("target") != "BRCA1":
             raise ValueError("Expected a BRCA1 evidence bundle.")
 
-        verified_count = report.verify_raw_files(bundle)
+        verified_count = report.verify_raw_files(data)
 
-        # Reuse the existing API schemas to validate displayed evidence.
-        # Import here to avoid a circular import during application startup.
+        # Import here to avoid a circular import during startup.
         from app.main import (
             GeneResponse,
             LiteratureResponse,
             ProteinResponse,
         )
 
-        gene = GeneResponse.model_validate(bundle["gene"])
-        protein = ProteinResponse.model_validate(bundle["protein"])
+        gene = GeneResponse.model_validate(data["gene"])
+        protein = ProteinResponse.model_validate(data["protein"])
         literature = LiteratureResponse.model_validate(
-            bundle["literature"]
+            data["literature"]
         )
 
         body = f"""
+{selector}
+
 <section>
 <h2>Saved evidence bundle</h2>
 <p class="meta">{text(bundle_path.name)}</p>
-<p>Selected by the latest file modification time.</p>
+<p>{text(selection_note)}</p>
 <p><strong>{verified_count} raw files verified</strong>
 against the hashes recorded in this bundle.</p>
 <p>Checksum checks establish file integrity, not scientific accuracy.</p>
@@ -189,6 +252,7 @@ PubMed PMID: {text(article.pmid)}</a></p>
             "<section><h2>Evidence could not be displayed</h2>"
             f"<p>{text(exc)}</p>"
             "<p>Check the saved bundle and its raw files.</p>"
+            '<p><a href="/">Return to the latest bundle</a></p>'
             "</section>",
             status_code=500,
         )

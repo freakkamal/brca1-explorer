@@ -143,3 +143,80 @@ def test_viewer_escapes_article_html(viewer_data):
     assert "<img src=x" not in response.text
     assert "&lt;script&gt;" in response.text
     assert "&lt;img src=x" in response.text
+
+
+
+def test_viewer_selects_older_bundle(viewer_data):
+    import os
+
+    bundle, bundle_path, raw_path, save = viewer_data
+
+    # Keep the original bundle and create a newer, distinct bundle.
+    newer = json.loads(json.dumps(bundle))
+    newer["literature"]["articles"][0]["title"] = "Newer BRCA1 study"
+    newer_path = bundle_path.parent / "brca1-newer.json"
+    newer_path.write_text(json.dumps(newer), encoding="utf-8")
+
+    os.utime(bundle_path, (1700000000, 1700000000))
+    os.utime(newer_path, (1700000100, 1700000100))
+
+    with TestClient(app) as client:
+        default_response = client.get("/")
+        selected_response = client.get(
+            "/", params={"bundle": bundle_path.name}
+        )
+
+    assert default_response.status_code == 200
+    assert "Newer BRCA1 study" in default_response.text
+    assert "Example BRCA1 study" not in default_response.text
+
+    assert selected_response.status_code == 200
+    assert "Example BRCA1 study" in selected_response.text
+    assert "Newer BRCA1 study" not in selected_response.text
+    assert "Showing the bundle you selected." in selected_response.text
+    assert (
+        f'value="{bundle_path.name}" selected'
+        in selected_response.text
+    )
+    assert f'value="{newer_path.name}"' in selected_response.text
+
+
+def test_viewer_rejects_unknown_bundle(viewer_data):
+    with TestClient(app) as client:
+        response = client.get(
+            "/", params={"bundle": "brca1-missing.json"}
+        )
+
+    assert response.status_code == 404
+    assert "Bundle not found" in response.text
+    assert "Example BRCA1 study" not in response.text
+
+
+def test_viewer_rejects_path_outside_bundle_folder(viewer_data):
+    bundle, bundle_path, raw_path, save = viewer_data
+
+    # Create a real file outside the bundles folder.
+    outside_path = storage.PROJECT_ROOT / "outside.json"
+    outside_path.write_text(json.dumps(bundle), encoding="utf-8")
+
+    with TestClient(app) as client:
+        response = client.get(
+            "/", params={"bundle": "../../outside.json"}
+        )
+
+    assert response.status_code == 404
+    assert "Bundle not found" in response.text
+    assert "Example BRCA1 study" not in response.text
+
+
+def test_viewer_rejects_selection_when_no_bundles_exist(viewer_data):
+    bundle, bundle_path, raw_path, save = viewer_data
+    bundle_path.unlink()
+
+    with TestClient(app) as client:
+        response = client.get(
+            "/", params={"bundle": bundle_path.name}
+        )
+
+    assert response.status_code == 404
+    assert "Bundle not found" in response.text
