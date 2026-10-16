@@ -220,3 +220,93 @@ def test_viewer_rejects_selection_when_no_bundles_exist(viewer_data):
 
     assert response.status_code == 404
     assert "Bundle not found" in response.text
+
+
+
+def test_download_returns_markdown_report(viewer_data):
+    bundle, bundle_path, raw_path, save = viewer_data
+
+    # The report includes these fields in addition to viewer data.
+    bundle["bundle_id"] = "download-test"
+    bundle["code_provenance"] = {
+        "commit": "test-commit",
+        "working_tree_dirty": False,
+    }
+    save()
+
+    with TestClient(app) as client:
+        response = client.get(
+            "/download-report",
+            params={"bundle": bundle_path.name},
+        )
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/markdown")
+    disposition = response.headers["content-disposition"]
+    assert "attachment" in disposition
+    assert ".md" in disposition
+    assert "# BRCA1 evidence report" in response.text
+    assert "Bundle ID: download-test" in response.text
+    assert "NCBI Gene ID: 672" in response.text
+    assert "UniProt accession: P38398" in response.text
+    assert "Example BRCA1 study" in response.text
+    assert "Raw files verified: 1" in response.text
+
+
+def test_download_rejects_unknown_bundle(viewer_data):
+    with TestClient(app) as client:
+        response = client.get(
+            "/download-report",
+            params={"bundle": "brca1-missing.json"},
+        )
+
+    assert response.status_code == 404
+    assert "Bundle not found" in response.text
+    assert "content-disposition" not in response.headers
+
+
+def test_download_blocks_corrupted_raw_file(viewer_data):
+    bundle, bundle_path, raw_path, save = viewer_data
+    raw_path.write_bytes(b"corrupted evidence")
+
+    with TestClient(app) as client:
+        response = client.get(
+            "/download-report",
+            params={"bundle": bundle_path.name},
+        )
+
+    assert response.status_code == 500
+    assert "Checksum mismatch" in response.text
+    assert "content-disposition" not in response.headers
+    assert not (storage.PROJECT_ROOT / "data/reports").exists()
+
+
+def test_download_blocks_missing_raw_file(viewer_data):
+    bundle, bundle_path, raw_path, save = viewer_data
+    raw_path.unlink()
+
+    with TestClient(app) as client:
+        response = client.get(
+            "/download-report",
+            params={"bundle": bundle_path.name},
+        )
+
+    assert response.status_code == 500
+    assert "Raw file is missing" in response.text
+    assert "content-disposition" not in response.headers
+
+
+def test_download_rejects_path_outside_bundle_folder(viewer_data):
+    bundle, bundle_path, raw_path, save = viewer_data
+    outside = storage.PROJECT_ROOT / "outside.json"
+    outside.write_text(json.dumps(bundle), encoding="utf-8")
+
+    with TestClient(app) as client:
+        response = client.get(
+            "/download-report",
+            params={"bundle": "../../outside.json"},
+        )
+
+    assert response.status_code == 404
+    assert "Bundle not found" in response.text
+    assert "content-disposition" not in response.headers

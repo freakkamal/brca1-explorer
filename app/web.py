@@ -4,7 +4,8 @@ import json
 from html import escape
 
 from fastapi import APIRouter
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, FileResponse
+from urllib.parse import urlencode
 
 from app import report, storage
 
@@ -178,8 +179,13 @@ def home(bundle: str | None = None):
         protein = ProteinResponse.model_validate(data["protein"])
         literature = LiteratureResponse.model_validate(
             data["literature"]
+        
         )
-
+        download_url = "/download-report?" + urlencode(
+            {"bundle": bundle_path.name}
+        )
+        
+        
         body = f"""
 {selector}
 
@@ -187,6 +193,7 @@ def home(bundle: str | None = None):
 <h2>Saved evidence bundle</h2>
 <p class="meta">{text(bundle_path.name)}</p>
 <p>{text(selection_note)}</p>
+<p><a href="{text(download_url)}">Download Markdown report</a></p>
 <p><strong>{verified_count} raw files verified</strong>
 against the hashes recorded in this bundle.</p>
 <p>Checksum checks establish file integrity, not scientific accuracy.</p>
@@ -253,6 +260,46 @@ PubMed PMID: {text(article.pmid)}</a></p>
             f"<p>{text(exc)}</p>"
             "<p>Check the saved bundle and its raw files.</p>"
             '<p><a href="/">Return to the latest bundle</a></p>'
+            "</section>",
+            status_code=500,
+        )
+
+
+
+@router.get("/download-report", tags=["Local viewer"])
+def download_report(bundle: str):
+    """Generate and download a report for an available saved bundle."""
+    try:
+        bundle_directory = storage.PROJECT_ROOT / "data" / "bundles"
+        available = {
+            path.name: path
+            for path in bundle_directory.glob("brca1-*.json")
+            if path.is_file()
+        }
+
+        if bundle not in available:
+            return page(
+                "<section><h2>Bundle not found</h2>"
+                "<p>The requested bundle is not available.</p>"
+                '<p><a href="/">Return to the viewer</a></p>'
+                "</section>",
+                status_code=404,
+            )
+
+        report_path = report.create_report(available[bundle])
+
+        return FileResponse(
+            path=report_path,
+            media_type="text/markdown",
+            filename=report_path.name,
+            headers={"Cache-Control": "no-store"},
+        )
+
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        return page(
+            "<section><h2>Report could not be created</h2>"
+            f"<p>{text(exc)}</p>"
+            '<p><a href="/">Return to the viewer</a></p>'
             "</section>",
             status_code=500,
         )
