@@ -258,3 +258,22 @@ Added a dropdown for choosing saved evidence bundles.
 
 Validation: 65 automated tests passed, including bundle-selection tests.
 The dropdown was also displayed successfully in the local browser.
+
+## Milestone 8: Report downloads
+
+Added a Download Markdown report link for the selected evidence bundle.
+
+Capabilities:
+- Generate and download a report directly from the local browser.
+- Include gene, protein, literature, and provenance information.
+- Verify raw-file checksums before generating the report.
+- Reject unavailable bundles and paths outside the bundle folder.
+- Block downloads when referenced raw evidence is missing or corrupted.
+- Require no paid AI API.
+
+Validation:
+- 70 automated tests passed.
+- A report was downloaded and its contents checked manually.
+
+Reports present retrieved evidence and are not AI-generated summaries.
+Research use only, not for clinical decisions.
