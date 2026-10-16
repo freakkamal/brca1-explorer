@@ -244,3 +244,6 @@ Limitations:
 - File modification time determines which bundle is displayed.
 - Retrieved evidence is not an AI summary or scientific quality assessment.
 - Research use only, not for clinical decisions.
+
+Validation: 65 automated tests passed, including bundle-selection tests.
+The dropdown was also displayed successfully in the local browser.
