@@ -245,5 +245,16 @@ Limitations:
 - Retrieved evidence is not an AI summary or scientific quality assessment.
 - Research use only, not for clinical decisions.
 
+## Milestone 7: Evidence bundle selection
+
+Added a dropdown for choosing saved evidence bundles.
+
+- Lists bundles by file modification time, newest first.
+- Displays the latest bundle by default.
+- Allows selection of an older saved bundle.
+- Rejects unavailable filenames and paths outside the bundle folder.
+- Verifies raw-file checksums before displaying evidence.
+- Requires no paid AI API.
+
 Validation: 65 automated tests passed, including bundle-selection tests.
 The dropdown was also displayed successfully in the local browser.
