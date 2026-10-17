@@ -408,3 +408,163 @@ def test_viewer_escapes_imported_summary_html(displayed_summary):
     assert response.status_code == 200
     assert "<script>" not in response.text
     assert "&lt;script&gt;" in response.text
+
+
+
+def test_viewer_displays_partial_review(displayed_summary):
+    from app import reviews
+
+    bundle_path, summary_path = displayed_summary
+    reviews.save_review(
+        summary_path,
+        "Test reviewer",
+        "in_progress",
+        "Checked the example finding against its abstract.",
+        ["123456"],
+    )
+
+    with TestClient(app) as client:
+        response = client.get("/")
+
+    assert response.status_code == 200
+    assert "<strong>Review in progress</strong>" in response.text
+    assert "Reviewer: Test reviewer" in response.text
+    assert "Selected claims only" in response.text
+    assert "Checked the example finding against its abstract." in response.text
+
+
+def test_viewer_displays_whole_summary_review(displayed_summary):
+    from app import reviews
+
+    bundle_path, summary_path = displayed_summary
+    reviews.save_review(
+        summary_path,
+        "Test reviewer",
+        "reviewed",
+        "Checked all statements in this example summary.",
+        ["123456"],
+        scope="whole_summary",
+    )
+
+    with TestClient(app) as client:
+        response = client.get("/")
+
+    assert response.status_code == 200
+    assert "<strong>Reviewed</strong>" in response.text
+    assert "Whole summary" in response.text
+    assert "Reviewed does not mean clinically validated." in response.text
+
+
+def test_viewer_uses_latest_review_time(displayed_summary):
+    import os
+    from app import reviews
+
+    bundle_path, summary_path = displayed_summary
+
+    earlier = reviews.save_review(
+        summary_path,
+        "Test reviewer",
+        "reviewed",
+        "Earlier complete review.",
+        ["123456"],
+        scope="whole_summary",
+    )
+    later = reviews.save_review(
+        summary_path,
+        "Test reviewer",
+        "changes_requested",
+        "Later review requests clearer wording.",
+        ["123456"],
+    )
+
+    # Recorded review time determines the result, not file modification time.
+    for path, timestamp in [
+        (earlier, "2026-01-01T10:00:00+00:00"),
+        (later, "2026-01-02T10:00:00+00:00"),
+    ]:
+        record = json.loads(path.read_text(encoding="utf-8"))
+        record["reviewed_at_utc"] = timestamp
+        path.write_text(json.dumps(record), encoding="utf-8")
+
+    os.utime(earlier, (1800000000, 1800000000))
+    os.utime(later, (1700000000, 1700000000))
+
+    with TestClient(app) as client:
+        response = client.get("/")
+
+    assert response.status_code == 200
+    assert "<strong>Changes requested</strong>" in response.text
+    assert "Later review requests clearer wording." in response.text
+    assert "<strong>Reviewed</strong>" not in response.text
+
+
+def test_viewer_ignores_review_for_different_summary_bytes(displayed_summary):
+    from app import reviews
+
+    bundle_path, summary_path = displayed_summary
+    reviews.save_review(
+        summary_path,
+        "Test reviewer",
+        "reviewed",
+        "Reviewed the original version.",
+        ["123456"],
+        scope="whole_summary",
+    )
+
+    # Even a formatting change produces a different exact file checksum.
+    summary_path.write_bytes(summary_path.read_bytes() + b"\n")
+
+    with TestClient(app) as client:
+        response = client.get("/")
+
+    assert response.status_code == 200
+    assert "<strong>Not yet reviewed</strong>" in response.text
+    assert "No review record matches this exact summary version." in response.text
+    assert "<strong>Reviewed</strong>" not in response.text
+
+
+def test_viewer_escapes_review_notes(displayed_summary):
+    from app import reviews
+
+    bundle_path, summary_path = displayed_summary
+    reviews.save_review(
+        summary_path,
+        "<b>Test reviewer</b>",
+        "in_progress",
+        "<script>alert('test')</script>",
+        ["123456"],
+    )
+
+    with TestClient(app) as client:
+        response = client.get("/")
+
+    assert response.status_code == 200
+    assert "<script>" not in response.text
+    assert "&lt;script&gt;" in response.text
+    assert "<b>Test reviewer</b>" not in response.text
+    assert "&lt;b&gt;Test reviewer&lt;/b&gt;" in response.text
+
+
+def test_viewer_rejects_invalid_complete_review(displayed_summary):
+    from app import reviews
+
+    bundle_path, summary_path = displayed_summary
+    review_path = reviews.save_review(
+        summary_path,
+        "Test reviewer",
+        "in_progress",
+        "Only selected claims checked.",
+        ["123456"],
+    )
+
+    record = json.loads(review_path.read_text(encoding="utf-8"))
+    record["decision"] = "reviewed"
+    review_path.write_text(json.dumps(record), encoding="utf-8")
+
+    with TestClient(app) as client:
+        response = client.get("/")
+
+    assert response.status_code == 200
+    assert "Review status unavailable" in response.text
+    assert "<strong>Reviewed</strong>" not in response.text
+    assert "A test interpretation." in response.text

@@ -79,7 +79,7 @@ button {
 <h1>BRCA1 Evidence Explorer</h1>
 <p class="notice">
 Research use only. Not for clinical decisions.
-This page displays saved evidence, not an AI-generated summary.
+This page displays saved evidence and separately labelled imported AI summaries.
 </p>
 """ + body + """
 </main>
@@ -326,7 +326,8 @@ def summary_section(bundle_path):
             candidates,
             key=lambda path: (path.stat().st_mtime_ns, path.name),
         )
-        saved = json.loads(summary_path.read_text(encoding="utf-8"))
+        summary_bytes = summary_path.read_bytes()
+        saved = json.loads(summary_bytes)
 
         if not isinstance(saved, dict):
             raise ValueError("Invalid summary record.")
@@ -366,7 +367,7 @@ def summary_section(bundle_path):
         return f"""
 <section>
 <h2>Imported AI summary</h2>
-<p><strong>Not yet reviewed</strong></p>
+{review_section(summary_bytes, saved, cited_pmids)}
 <p>Origin: {text(saved["origin"])}</p>
 <p class="meta">Imported: {text(saved["imported_at_utc"])}</p>
 <p>Showing the most recently modified summary for this exact bundle.</p>
@@ -386,4 +387,117 @@ Citation membership checks do not establish scientific accuracy.</p>
             f"<p>{text(exc)}</p>"
             "<p>The imported summary could not be validated.</p>"
             "</section>"
+        )
+
+
+def review_section(summary_bytes, summary, cited_pmids):
+    """Show the latest recorded review for this exact summary version."""
+    from datetime import datetime
+
+    labels = {
+        "in_progress": "Review in progress",
+        "changes_requested": "Changes requested",
+        "reviewed": "Reviewed",
+    }
+    scope_labels = {
+        "selected_claims": "Selected claims only",
+        "whole_summary": "Whole summary",
+    }
+
+    file_digest = hashlib.sha256(summary_bytes).hexdigest()
+    directory = storage.PROJECT_ROOT / "data/reviews"
+    matching = []
+
+    try:
+        for path in directory.glob("review-*.json"):
+            record = json.loads(path.read_text(encoding="utf-8"))
+
+            if not isinstance(record, dict):
+                raise ValueError("Invalid review record.")
+
+            # Reviews of other versions must not affect this summary.
+            if record.get("summary_file_sha256") != file_digest:
+                continue
+
+            if (
+                record["summary_id"] != summary["summary_id"]
+                or record["summary_sha256"] != summary["summary_sha256"]
+                or record["bundle_sha256"] != summary["bundle_sha256"]
+            ):
+                raise ValueError("Review identifiers do not match the summary.")
+
+            decision = record["decision"]
+            scope = record["scope"]
+
+            if decision not in labels or scope not in scope_labels:
+                raise ValueError("Invalid review decision or scope.")
+
+            for field in ("reviewer", "notes", "reviewed_at_utc"):
+                if (
+                    not isinstance(record[field], str)
+                    or not record[field].strip()
+                ):
+                    raise ValueError(f"Review field is missing: {field}")
+
+            checked = record["checked_pmids"]
+            if (
+                not isinstance(checked, list)
+                or not checked
+                or not all(isinstance(pmid, str) for pmid in checked)
+            ):
+                raise ValueError("Invalid checked PMID list.")
+
+            if not set(checked).issubset(set(cited_pmids)):
+                raise ValueError("Review references uncited PMIDs.")
+
+            if decision == "reviewed" and (
+                scope != "whole_summary"
+                or set(checked) != set(cited_pmids)
+            ):
+                raise ValueError(
+                    "A partial review cannot mark the whole summary reviewed."
+                )
+
+            reviewed_at = datetime.fromisoformat(record["reviewed_at_utc"])
+            if reviewed_at.tzinfo is None:
+                raise ValueError("Review timestamp must include a timezone.")
+
+            matching.append((reviewed_at, path.name, record))
+
+        if not matching:
+            return (
+                "<p><strong>Not yet reviewed</strong></p>"
+                "<p>No review record matches this exact summary version.</p>"
+            )
+
+        latest = max(matching, key=lambda item: (item[0], item[1]))[2]
+
+        checked_links = " | ".join(
+            f'<a href="https://pubmed.ncbi.nlm.nih.gov/{text(pmid)}/">'
+            f"PMID {text(pmid)}</a>"
+            for pmid in sorted(set(latest["checked_pmids"]), key=int)
+        )
+
+        return f"""
+<div class="notice">
+<p><strong>{labels[latest["decision"]]}</strong></p>
+<p>Reviewer: {text(latest["reviewer"])}</p>
+<p>Recorded review time: {text(latest["reviewed_at_utc"])}</p>
+<p>Scope: {scope_labels[latest["scope"]]}</p>
+<p>Checked sources: {checked_links}</p>
+<p><strong>Review notes</strong></p>
+<div class="abstract">{text(latest["notes"])}</div>
+<p>Showing the latest recorded review for this summary version.
+A later partial review does not automatically inherit earlier coverage.</p>
+<p>Reviewer identity and completion are self-reported.
+Reviewed does not mean clinically validated.</p>
+</div>
+"""
+
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        return (
+            "<p><strong>Review status unavailable</strong></p>"
+            f"<p>{text(exc)}</p>"
+            "<p>Review records could not be validated. "
+            "No reviewed status is being asserted.</p>"
         )
