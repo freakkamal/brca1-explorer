@@ -304,3 +304,28 @@ Limitations:
 - Summary text is displayed as plain text; tables may lose formatting.
 - Scientific claims require human review.
 - No paid AI API is required.
+
+## Milestone 10: Summary review tracking
+
+Added review records linked to exact imported summary versions.
+
+Capabilities:
+- Record reviewer name, review time, notes, scope, and checked PMIDs.
+- Support in_progress, changes_requested, and reviewed decisions.
+- Require whole-summary scope and all cited PMIDs for reviewed status.
+- Preserve summaries and earlier reviews as separate files.
+- Match reviews to the exact summary file checksum.
+- Display the latest matching review by recorded review time.
+- Escape reviewer names and notes for safe browser display.
+- Show an unavailable status when review records cannot be validated.
+
+Validation:
+- 97 automated tests passed.
+- The browser correctly displayed Not yet reviewed when no matching
+  review record existed.
+
+Limitations:
+- Reviewer identity and review completion are self-reported.
+- Citation checks do not establish scientific accuracy.
+- Reviewed does not mean clinically validated.
+- Review records are stored under data/reviews and excluded from Git.
