@@ -329,3 +329,26 @@ Limitations:
 - Citation checks do not establish scientific accuracy.
 - Reviewed does not mean clinically validated.
 - Review records are stored under data/reviews and excluded from Git.
+
+## Milestone 11: Browser review form
+
+Added a form for recording reviews directly from the local viewer.
+
+Capabilities:
+- Enter reviewer name, review notes, scope, and decision.
+- Select the cited sources actually checked.
+- Save reviews through the existing review-validation module.
+- Link submissions to the exact displayed summary version.
+- Reject changed summaries, invalid form tokens, and invalid selections.
+- Preserve the original summary and previous review records.
+
+Validation:
+- 105 automated tests passed.
+- The form was displayed successfully in the local browser.
+- Submission tests use temporary data, not real review records.
+
+Limitations:
+- Intended for local use; user authentication is not implemented.
+- Reviewer identity and completion remain self-reported.
+- Refresh the viewer after restarting the server before submitting.
+- Recording a review does not establish clinical validity.
