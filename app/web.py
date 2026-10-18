@@ -472,7 +472,36 @@ def review_section(summary_bytes, summary, cited_pmids):
                 "<p>No review record matches this exact summary version.</p>"
             )
 
-        latest = max(matching, key=lambda item: (item[0], item[1]))[2]
+        matching.sort(
+        key=lambda item: (item[0], item[1]),
+        reverse=True,
+        )
+        latest = matching[0][2]
+
+        history_items = []
+        for reviewed_at, filename, record in matching:
+            checked_sources = ", ".join(
+                sorted(set(record["checked_pmids"]), key=int)
+            )
+            history_items.append(
+                "<article>"
+                f"<h4>{text(labels[record['decision']])}</h4>"
+                f"<p>Reviewer: {text(record['reviewer'])}</p>"
+                f"<p>Recorded time: {text(record['reviewed_at_utc'])}</p>"
+                f"<p>Scope: {text(scope_labels[record['scope']])}</p>"
+                f"<p>Checked PMIDs: {text(checked_sources)}</p>"
+                f"<div class=\"abstract\">{text(record['notes'])}</div>"
+                "</article>"
+            )
+
+        history_html = (
+            "<details>"
+            f"<summary>Review history ({len(matching)} records)</summary>"
+            "<p>Newest recorded review first. "
+            "Only reviews matching this exact summary version are shown.</p>"
+            + "".join(history_items)
+            + "</details>"
+        )
 
         checked_links = " | ".join(
             f'<a href="https://pubmed.ncbi.nlm.nih.gov/{text(pmid)}/">'
@@ -493,6 +522,7 @@ def review_section(summary_bytes, summary, cited_pmids):
 A later partial review does not automatically inherit earlier coverage.</p>
 <p>Reviewer identity and completion are self-reported.
 Reviewed does not mean clinically validated.</p>
+{history_html}
 </div>
 """
 

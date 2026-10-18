@@ -712,3 +712,85 @@ def test_review_form_rejects_blank_notes(review_form_data):
     assert response.status_code == 400
     assert "Review notes are required" in response.text
     assert not (storage.PROJECT_ROOT / "data/reviews").exists()
+
+
+
+def test_review_history_shows_records_newest_first(displayed_summary):
+    from app import reviews
+
+    bundle_path, summary_path = displayed_summary
+
+    earlier = reviews.save_review(
+        summary_path,
+        "Earlier reviewer",
+        "in_progress",
+        "Earlier history note.",
+        ["123456"],
+    )
+    later = reviews.save_review(
+        summary_path,
+        "Later reviewer",
+        "changes_requested",
+        "Later history note.",
+        ["123456"],
+    )
+
+    for path, timestamp in [
+        (earlier, "2026-01-01T10:00:00+00:00"),
+        (later, "2026-01-02T10:00:00+00:00"),
+    ]:
+        record = json.loads(path.read_text(encoding="utf-8"))
+        record["reviewed_at_utc"] = timestamp
+        path.write_text(json.dumps(record), encoding="utf-8")
+
+    with TestClient(app) as client:
+        response = client.get("/")
+
+    assert response.status_code == 200
+    assert "Review history (2 records)" in response.text
+
+    history = response.text.split(
+        "Review history (2 records)", 1
+    )[1].split("</details>", 1)[0]
+
+    assert "Earlier reviewer" in history
+    assert "Later reviewer" in history
+    assert history.index("Later history note.") < history.index(
+        "Earlier history note."
+    )
+    assert "Selected claims only" in history
+    assert "Checked PMIDs: 123456" in history
+
+
+def test_review_history_excludes_other_summary_version(displayed_summary):
+    from app import reviews
+
+    bundle_path, summary_path = displayed_summary
+
+    reviews.save_review(
+        summary_path,
+        "Old version reviewer",
+        "in_progress",
+        "This review belongs to the old version.",
+        ["123456"],
+    )
+
+    # Change the exact file bytes, keeping valid summary content.
+    summary_path.write_bytes(summary_path.read_bytes() + b"\n")
+
+    reviews.save_review(
+        summary_path,
+        "Current version reviewer",
+        "in_progress",
+        "This review belongs to the current version.",
+        ["123456"],
+    )
+
+    with TestClient(app) as client:
+        response = client.get("/")
+
+    assert response.status_code == 200
+    assert "Review history (1 records)" in response.text
+    assert "Current version reviewer" in response.text
+    assert "Old version reviewer" not in response.text
+    assert "This review belongs to the old version." not in response.text
