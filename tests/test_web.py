@@ -568,3 +568,147 @@ def test_viewer_rejects_invalid_complete_review(displayed_summary):
     assert "Review status unavailable" in response.text
     assert "<strong>Reviewed</strong>" not in response.text
     assert "A test interpretation." in response.text
+
+
+
+@pytest.fixture
+def review_form_data(displayed_summary):
+    """Read the hidden fields from the actual rendered form."""
+    from html.parser import HTMLParser
+
+    class HiddenFields(HTMLParser):
+        def __init__(self):
+            super().__init__()
+            self.fields = {}
+
+        def handle_starttag(self, tag, attrs):
+            attrs = dict(attrs)
+            if tag == "input" and attrs.get("type") == "hidden":
+                self.fields[attrs["name"]] = attrs.get("value", "")
+
+    with TestClient(app) as client:
+        response = client.get("/")
+
+    assert response.status_code == 200
+    parser = HiddenFields()
+    parser.feed(response.text)
+
+    fields = parser.fields
+    assert {"token", "summary", "summary_digest"} <= fields.keys()
+    fields.update({
+        "reviewer": "Test reviewer",
+        "decision": "in_progress",
+        "scope": "selected_claims",
+        "notes": "Checked the example finding against its abstract.",
+        "checked_pmids": "123456",
+    })
+    return fields
+
+
+def test_review_form_submission_saves_record(review_form_data):
+    summary_path = (
+        storage.PROJECT_ROOT / "data/summaries"
+        / review_form_data["summary"]
+    )
+    original = summary_path.read_bytes()
+
+    with TestClient(app) as client:
+        response = client.post("/save-review", data=review_form_data)
+        viewer = client.get("/")
+
+    assert response.status_code == 200
+    assert "<h2>Review saved</h2>" in response.text
+
+    records = list(
+        (storage.PROJECT_ROOT / "data/reviews").glob("review-*.json")
+    )
+    assert len(records) == 1
+    saved = json.loads(records[0].read_text(encoding="utf-8"))
+    assert saved["reviewer"] == "Test reviewer"
+    assert saved["decision"] == "in_progress"
+    assert saved["checked_pmids"] == ["123456"]
+    assert (
+        saved["summary_file_sha256"]
+        == review_form_data["summary_digest"]
+    )
+    assert summary_path.read_bytes() == original
+    assert "<strong>Review in progress</strong>" in viewer.text
+
+
+def test_review_form_rejects_invalid_token(review_form_data):
+    review_form_data["token"] = "invalid-token"
+
+    with TestClient(app) as client:
+        response = client.post("/save-review", data=review_form_data)
+
+    assert response.status_code == 403
+    assert not (storage.PROJECT_ROOT / "data/reviews").exists()
+
+
+def test_review_form_rejects_changed_summary(review_form_data):
+    summary_path = (
+        storage.PROJECT_ROOT / "data/summaries"
+        / review_form_data["summary"]
+    )
+    summary_path.write_bytes(summary_path.read_bytes() + b"\n")
+
+    with TestClient(app) as client:
+        response = client.post("/save-review", data=review_form_data)
+
+    assert response.status_code == 409
+    assert "summary changed" in response.text
+    assert not (storage.PROJECT_ROOT / "data/reviews").exists()
+
+
+def test_review_form_rejects_unknown_source(review_form_data):
+    review_form_data["checked_pmids"] = "999999"
+
+    with TestClient(app) as client:
+        response = client.post("/save-review", data=review_form_data)
+
+    assert response.status_code == 400
+    assert "checked PMIDs" in response.text
+    assert not (storage.PROJECT_ROOT / "data/reviews").exists()
+
+
+def test_review_form_requires_selected_sources(review_form_data):
+    del review_form_data["checked_pmids"]
+
+    with TestClient(app) as client:
+        response = client.post("/save-review", data=review_form_data)
+
+    assert response.status_code == 400
+    assert not (storage.PROJECT_ROOT / "data/reviews").exists()
+
+
+def test_review_form_blocks_partial_review_as_complete(review_form_data):
+    review_form_data["decision"] = "reviewed"
+    review_form_data["scope"] = "selected_claims"
+
+    with TestClient(app) as client:
+        response = client.post("/save-review", data=review_form_data)
+
+    assert response.status_code == 400
+    assert "Reviewed requires" in response.text
+    assert not (storage.PROJECT_ROOT / "data/reviews").exists()
+
+
+def test_review_form_rejects_outside_summary_path(review_form_data):
+    review_form_data["summary"] = "../../outside.json"
+
+    with TestClient(app) as client:
+        response = client.post("/save-review", data=review_form_data)
+
+    assert response.status_code == 404
+    assert not (storage.PROJECT_ROOT / "data/reviews").exists()
+
+
+def test_review_form_rejects_blank_notes(review_form_data):
+    review_form_data["notes"] = "   "
+
+    with TestClient(app) as client:
+        response = client.post("/save-review", data=review_form_data)
+
+    assert response.status_code == 400
+    assert "Review notes are required" in response.text
+    assert not (storage.PROJECT_ROOT / "data/reviews").exists()

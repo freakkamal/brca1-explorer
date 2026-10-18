@@ -3,10 +3,11 @@
 import json
 import hashlib
 from html import escape
+import secrets
 
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 from fastapi.responses import HTMLResponse, FileResponse
-from urllib.parse import urlencode
+from urllib.parse import urlencode, parse_qs
 
 from app import report, storage
 
@@ -378,6 +379,7 @@ Citation membership checks do not establish scientific accuracy.</p>
 <div class="abstract">{text(summary_text)}</div>
 </details>
 <p><strong>Cited articles:</strong> {links}</p>
+{review_form(summary_path, summary_bytes, cited_pmids)}
 </section>
 """
 
@@ -500,4 +502,175 @@ Reviewed does not mean clinically validated.</p>
             f"<p>{text(exc)}</p>"
             "<p>Review records could not be validated. "
             "No reviewed status is being asserted.</p>"
+        )
+
+
+# Refresh the browser after restarting the server to get a fresh token.
+REVIEW_FORM_TOKEN = secrets.token_hex(32)
+
+
+def review_form(summary_path, summary_bytes, cited_pmids):
+    """Build a form tied to the summary version currently displayed."""
+    digest = hashlib.sha256(summary_bytes).hexdigest()
+    checkboxes = "".join(
+        f'<label style="display:block">'
+        f'<input type="checkbox" name="checked_pmids" value="{text(pmid)}">'
+        f' PMID {text(pmid)}</label>'
+        for pmid in cited_pmids
+    )
+
+    return f"""
+<details>
+<summary>Record a review</summary>
+<form action="/save-review" method="post">
+<input type="hidden" name="token" value="{REVIEW_FORM_TOKEN}">
+<input type="hidden" name="summary" value="{text(summary_path.name)}">
+<input type="hidden" name="summary_digest" value="{digest}">
+
+<p>
+<label for="reviewer">Reviewer name</label><br>
+<input id="reviewer" name="reviewer" required maxlength="200"
+style="width:100%;box-sizing:border-box;padding:8px">
+</p>
+
+<fieldset>
+<legend>Sources you actually checked</legend>
+{checkboxes}
+</fieldset>
+
+<label for="review-scope">Review scope</label>
+<select id="review-scope" name="scope">
+<option value="selected_claims">Selected claims only</option>
+<option value="whole_summary">Whole summary</option>
+</select>
+
+<label for="review-decision">Decision</label>
+<select id="review-decision" name="decision">
+<option value="in_progress">Review in progress</option>
+<option value="changes_requested">Changes requested</option>
+<option value="reviewed">Reviewed</option>
+</select>
+
+<p>
+<label for="review-notes">Review notes</label><br>
+<textarea id="review-notes" name="notes" rows="7" required
+maxlength="10000"
+style="width:100%;box-sizing:border-box;padding:8px"
+placeholder="Describe what you checked, the evidence used, and any corrections needed."></textarea>
+</p>
+
+<p>Choose Reviewed only after checking the entire summary.
+All cited sources must be selected for that decision.
+Review completion is self-reported, not clinical validation.</p>
+
+<button type="submit">Save review</button>
+</form>
+</details>
+"""
+
+
+@router.post("/save-review", response_class=HTMLResponse, tags=["Local viewer"])
+async def submit_review(request: Request):
+    """Save a browser-submitted review for an exact summary version."""
+    from app import reviews
+
+    try:
+        content_type = request.headers.get("content-type", "").split(";")[0]
+        if content_type != "application/x-www-form-urlencoded":
+            return page("<p>Unsupported form format.</p>", status_code=415)
+
+        # Bound the request size before parsing it.
+        body = bytearray()
+        async for chunk in request.stream():
+            body.extend(chunk)
+            if len(body) > 100000:
+                return page("<p>Review form is too large.</p>", status_code=413)
+
+        fields = parse_qs(
+            body.decode("utf-8"),
+            keep_blank_values=True,
+            max_num_fields=100,
+        )
+
+        def single(name):
+            values = fields.get(name, [])
+            if len(values) != 1:
+                raise ValueError(f"Missing or repeated field: {name}")
+            return values[0]
+
+        token = single("token")
+        if not secrets.compare_digest(
+            token.encode("utf-8"),
+            REVIEW_FORM_TOKEN.encode("utf-8"),
+        ):
+            return page(
+                "<p>This form has expired or is invalid. "
+                "Refresh the viewer and try again.</p>",
+                status_code=403,
+            )
+
+        filename = single("summary")
+        directory = (storage.PROJECT_ROOT / "data/summaries").resolve()
+        available = {
+            path.name: path
+            for path in directory.glob("brca1-*.json")
+            if path.is_file() and path.resolve().is_relative_to(directory)
+        }
+
+        if filename not in available:
+            return page("<p>Summary not found.</p>", status_code=404)
+
+        summary_path = available[filename]
+        summary_bytes = summary_path.read_bytes()
+        actual_digest = hashlib.sha256(summary_bytes).hexdigest()
+
+        if single("summary_digest") != actual_digest:
+            return page(
+                "<p>The summary changed after this form was opened. "
+                "Refresh the viewer before reviewing it.</p>",
+                status_code=409,
+            )
+
+        reviewer = single("reviewer")
+        notes = single("notes")
+        if len(reviewer) > 200 or len(notes) > 10000:
+            raise ValueError("Reviewer name or notes exceed the length limit.")
+
+        saved_summary = json.loads(summary_bytes)
+
+        destination = reviews.save_review(
+            summary_path=summary_path,
+            reviewer=reviewer,
+            decision=single("decision"),
+            notes=notes,
+            checked_pmids=fields.get("checked_pmids", []),
+            scope=single("scope"),
+        )
+
+        return_url = "/?" + urlencode(
+            {"bundle": saved_summary["bundle_filename"]}
+        )
+        return page(
+            "<section><h2>Review saved</h2>"
+            f"<p>Record: {text(destination.name)}</p>"
+            "<p>The original summary was not changed.</p>"
+            f'<p><a href="{text(return_url)}">'
+            "Return to the evidence and review status</a></p>"
+            "</section>"
+        )
+
+    except (ValueError, KeyError, TypeError) as exc:
+        return page(
+            "<section><h2>Review not saved</h2>"
+            f"<p>{text(exc)}</p>"
+            "<p>Use your browser's Back button to correct the form.</p>"
+            "</section>",
+            status_code=400,
+        )
+    except OSError:
+        return page(
+            "<section><h2>Review could not be saved</h2>"
+            "<p>A file could not be read or written. "
+            "Check the project files and folder permissions.</p></section>",
+            status_code=500,
         )
