@@ -352,3 +352,23 @@ Limitations:
 - Reviewer identity and completion remain self-reported.
 - Refresh the viewer after restarting the server before submitting.
 - Recording a review does not establish clinical validity.
+
+## Milestone 12: Review history
+
+Added expandable review history beneath the latest review status.
+
+Capabilities:
+- Display all matching reviews for the exact summary version.
+- Order reviews by recorded review time, newest first.
+- Show reviewer names, decisions, scopes, checked PMIDs, and notes.
+- Exclude reviews linked to different summary file checksums.
+- Preserve previous review records.
+
+Validation:
+- 107 automated tests passed.
+- Tests verify history ordering and summary-version isolation.
+
+Limitations:
+- Review identity and completion remain self-reported.
+- Reviews apply only to the exact summary version checked.
+- Review history does not establish scientific or clinical validity.
