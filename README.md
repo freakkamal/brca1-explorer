@@ -372,3 +372,26 @@ Limitations:
 - Review identity and completion remain self-reported.
 - Reviews apply only to the exact summary version checked.
 - Review history does not establish scientific or clinical validity.
+
+
+## Milestone 13: Summary and review report download
+
+Added a downloadable HTML report for an exact imported summary version.
+
+Capabilities:
+- Includes the original summary and PubMed source links.
+- Displays bundle, summary-file, and summary-text checksums.
+- Verifies the referenced raw evidence files before export.
+- Includes the latest matching review and review history.
+- Rejects changed summary versions and unavailable summary filenames.
+- Escapes imported text before placing it in HTML.
+
+Validation:
+- 112 automated tests passed.
+- Manually downloaded and opened a report containing the recorded partial review.
+
+Limitations:
+- Downloads capture review records at download time and do not update.
+- Reviewer identity and review completion are self-reported.
+- Checksums and citation membership do not establish scientific accuracy.
+- Research use only; not for clinical decisions.
