@@ -379,6 +379,7 @@ Citation membership checks do not establish scientific accuracy.</p>
 <div class="abstract">{text(summary_text)}</div>
 </details>
 <p><strong>Cited articles:</strong> {links}</p>
+<p><a href="{text('/download-summary-review?' + urlencode({'summary': summary_path.name, 'digest': hashlib.sha256(summary_bytes).hexdigest()}))}">Download summary and review report</a></p>
 {review_form(summary_path, summary_bytes, cited_pmids)}
 </section>
 """
@@ -702,5 +703,127 @@ async def submit_review(request: Request):
             "<section><h2>Review could not be saved</h2>"
             "<p>A file could not be read or written. "
             "Check the project files and folder permissions.</p></section>",
+            status_code=500,
+        )
+
+@router.get("/download-summary-review", tags=["Local viewer"])
+def download_summary_review(summary: str, digest: str):
+    """Download an exact summary version with its current review history."""
+    from app.summaries import extract_pmids
+
+    try:
+        directory = (storage.PROJECT_ROOT / "data/summaries").resolve()
+        available = {
+            path.name: path
+            for path in directory.glob("brca1-*.json")
+            if path.is_file() and path.resolve().is_relative_to(directory)
+        }
+
+        if summary not in available:
+            return page("<p>Summary not found.</p>", status_code=404)
+
+        summary_bytes = available[summary].read_bytes()
+        file_digest = hashlib.sha256(summary_bytes).hexdigest()
+
+        if digest != file_digest:
+            return page(
+                "<p>The summary changed. Refresh the viewer "
+                "and download again.</p>",
+                status_code=409,
+            )
+
+        saved = json.loads(summary_bytes)
+        if not isinstance(saved, dict) or saved.get("target") != "BRCA1":
+            raise ValueError("Expected a BRCA1 summary.")
+
+        summary_text = saved["summary_markdown"]
+        if not isinstance(summary_text, str) or not summary_text.strip():
+            raise ValueError("Summary text is missing.")
+
+        text_digest = hashlib.sha256(
+            summary_text.encode("utf-8")
+        ).hexdigest()
+        if text_digest != saved["summary_sha256"]:
+            raise ValueError("Summary text checksum mismatch.")
+
+        bundle_root = (storage.PROJECT_ROOT / "data/bundles").resolve()
+        bundle_path = (bundle_root / saved["bundle_filename"]).resolve()
+
+        if not bundle_path.is_relative_to(bundle_root):
+            raise ValueError("Bundle path is outside data/bundles.")
+
+        bundle_bytes = bundle_path.read_bytes()
+        bundle_digest = hashlib.sha256(bundle_bytes).hexdigest()
+        if bundle_digest != saved["bundle_sha256"]:
+            raise ValueError("Bundle checksum mismatch.")
+
+        bundle = json.loads(bundle_bytes)
+        if not isinstance(bundle, dict) or bundle.get("target") != "BRCA1":
+            raise ValueError("Expected a BRCA1 evidence bundle.")
+
+        verified_count = report.verify_raw_files(bundle)
+
+        cited_pmids = extract_pmids(summary_text)
+        allowed_pmids = {
+            str(article["pmid"])
+            for article in bundle["literature"]["articles"]
+        }
+        if not cited_pmids or not set(cited_pmids).issubset(allowed_pmids):
+            raise ValueError("Summary citations do not match the bundle.")
+
+        links = " | ".join(
+            f'<a href="https://pubmed.ncbi.nlm.nih.gov/{pmid}/">'
+            f"PMID {pmid}</a>"
+            for pmid in cited_pmids
+        )
+
+        # Reuse the viewer's validation and ordering of review records.
+        review_html = review_section(summary_bytes, saved, cited_pmids)
+
+        body = f"""
+<section>
+<h2>AI summary and review report</h2>
+<p>This download captures the review records available at download time.
+It does not update when later reviews are added.</p>
+<p>Origin: {text(saved["origin"])}</p>
+<p>Imported: {text(saved["imported_at_utc"])}</p>
+<p class="meta">Bundle file: {text(saved["bundle_filename"])}</p>
+<p class="meta">Bundle SHA-256: {bundle_digest}</p>
+<p class="meta">Summary file SHA-256: {file_digest}</p>
+<p class="meta">Summary text SHA-256: {text_digest}</p>
+<p>Raw files verified: {verified_count}</p>
+<p>Checksums establish integrity, not scientific accuracy.
+Citation membership does not establish that sources support every claim.</p>
+</section>
+
+<section>
+<h2>Recorded review status and history</h2>
+<p>Reviewer identity and review completion are self-reported.
+Reviewed does not mean clinically validated.</p>
+{review_html}
+</section>
+
+<section>
+<h2>Imported AI summary — original text</h2>
+<p>Status wording inside the original text reflects the imported draft.
+The recorded review status is shown above.</p>
+<div class="abstract">{text(summary_text)}</div>
+<p><strong>Cited articles:</strong> {links}</p>
+</section>
+"""
+        response = page(body)
+        response.headers["Content-Disposition"] = (
+            'attachment; filename="brca1-summary-review-'
+            + file_digest
+            + '.html"'
+        )
+        return response
+
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        return page(
+            "<section><h2>Summary report could not be created</h2>"
+            f"<p>{text(exc)}</p>"
+            "<p>Check the summary, evidence bundle, and raw files.</p>"
+            "</section>",
             status_code=500,
         )
