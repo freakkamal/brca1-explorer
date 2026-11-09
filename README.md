@@ -395,3 +395,19 @@ Limitations:
 - Reviewer identity and review completion are self-reported.
 - Checksums and citation membership do not establish scientific accuracy.
 - Research use only; not for clinical decisions.
+
+## Milestone 14: Compare saved evidence bundles
+
+Open `/compare-bundles` in the local viewer. Select the older bundle as
+the baseline and the newer bundle as the comparison, then click **Compare
+bundles**. The comparison uses saved files and requires no API key.
+
+The page groups articles by PubMed ID: only in the baseline, only in the
+comparison, or present in both. For shared articles, it flags changes to
+the saved title or abstract. An article appearing in only one bundle does
+not establish that the paper was newly published or withdrawn.
+
+Browser validation: The two saved bundles contained 10 articles each.
+Three appeared only in the newer bundle, three only in the older bundle,
+and seven in both. None of the seven shared titles or abstracts changed.
+The saved abstract for PMID 37797621 opened from the comparison page.
