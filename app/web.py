@@ -145,6 +145,7 @@ def home(bundle: str | None = None):
 
         selector = (
             "<section><h2>Choose an evidence bundle</h2>"
+            '<p><a href="/compounds">Find a compound in PubChem</a></p>'
             '<form action="/" method="get">'
             '<label for="bundle">Saved bundle</label>'
             '<select id="bundle" name="bundle">'
@@ -988,3 +989,59 @@ Their roles are determined by your selections, not by their dates.</p>
             "</section>",
             status_code=500,
         )
+@router.get("/compounds", response_class=HTMLResponse, tags=["Compound lookup"])
+def compound_lookup_page(name: str | None = None):
+    """Search PubChem by name and display all matching compound IDs."""
+    from app import pubchem
+
+    query = (name or "").strip()
+    form = f"""
+<section>
+<h2>Find a compound</h2>
+<form action="/compounds" method="get">
+<label for="compound-name">Compound name</label>
+<input id="compound-name" name="name" value="{text(query)}"
+       placeholder="Example: aspirin" required maxlength="200">
+<button type="submit">Search PubChem</button>
+</form>
+<p>A name match identifies a chemical record. It does not establish
+activity against BRCA1.</p>
+<p><a href="/">Return to the evidence viewer</a></p>
+</section>
+"""
+
+    if name is None:
+        return page(form)
+
+    if not query or len(query) > 200:
+        return page(
+            form + "<p>Enter a compound name between 1 and 200 characters.</p>",
+            status_code=400,
+        )
+
+    try:
+        result = pubchem.lookup_compound(query)
+    except ValueError as exc:
+        return page(form + f"<p>{text(exc)}</p>", status_code=404)
+    except RuntimeError as exc:
+        return page(form + f"<p>{text(exc)}</p>", status_code=502)
+    except OSError:
+        return page(form + "<p>Could not save the PubChem response.</p>",
+                    status_code=500)
+
+    items = "".join(
+        f'<li><a href="{text(match["record_url"])}">'
+        f'PubChem CID {text(match["cid"])}</a></li>'
+        for match in result["matches"]
+    )
+
+    return page(form + f"""
+<section>
+<h2>Results for {text(query)}</h2>
+<p>Matching compound IDs: {len(result["matches"])}</p>
+<ul>{items}</ul>
+<p>Retrieved (UTC): {text(result["retrieved_at_utc"])}</p>
+<p class="meta">Saved response: {text(result["raw_file"])}</p>
+<p class="meta">Response SHA-256: {text(result["response_sha256"])}</p>
+</section>
+""")

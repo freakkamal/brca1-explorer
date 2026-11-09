@@ -8,6 +8,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 
 SOURCE_FORMATS = {
     "uniprot": ".json",
+    "pubchem": ".json",
     "ncbi_gene": ".json",
     "pubmed_search": ".json",
     "pubmed_fetch": ".xml",
