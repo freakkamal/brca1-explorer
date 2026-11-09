@@ -1031,7 +1031,8 @@ activity against BRCA1.</p>
 
     items = "".join(
         f'<li><a href="{text(match["record_url"])}">'
-        f'PubChem CID {text(match["cid"])}</a></li>'
+        f'PubChem CID {text(match["cid"])}</a> | '
+        f'<a href="/compounds/{text(match["cid"])}">View compound details</a></li>'
         for match in result["matches"]
     )
 
@@ -1043,5 +1044,38 @@ activity against BRCA1.</p>
 <p>Retrieved (UTC): {text(result["retrieved_at_utc"])}</p>
 <p class="meta">Saved response: {text(result["raw_file"])}</p>
 <p class="meta">Response SHA-256: {text(result["response_sha256"])}</p>
+</section>
+""")
+
+@router.get("/compounds/{cid}", response_class=HTMLResponse, tags=["Compound lookup"])
+def compound_details_page(cid: str):
+    from app.compound_details import CompoundNotFound, fetch_compound_details
+
+    back = '<p><a href="/compounds">Return to compound search</a></p>'
+
+    try:
+        data = fetch_compound_details(cid)
+    except CompoundNotFound as exc:
+        return page(f"<p>{text(exc)}</p>" + back, status_code=404)
+    except ValueError as exc:
+        return page(f"<p>{text(exc)}</p>" + back, status_code=400)
+    except RuntimeError as exc:
+        return page(f"<p>{text(exc)}</p>" + back, status_code=502)
+    except OSError:
+        return page("<p>Could not save the PubChem response.</p>" + back,
+                    status_code=500)
+
+    return page(f"""
+<section>
+<h2>Compound details: PubChem CID {text(data["cid"])}</h2>
+<dl>
+<dt>Molecular formula</dt><dd>{text(data["molecular_formula"])}</dd>
+<dt>Molecular weight</dt><dd>{text(data["molecular_weight_g_mol"])} g/mol</dd>
+</dl>
+<p><a href="{text(data["record_url"])}">Open the PubChem compound record</a></p>
+<p class="meta">Retrieved (UTC): {text(data["retrieved_at_utc"])}</p>
+<p class="meta">Saved response: {text(data["raw_file"])}</p>
+<p class="meta">Response SHA-256: {text(data["response_sha256"])}</p>
+{back}
 </section>
 """)
