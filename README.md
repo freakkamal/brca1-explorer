@@ -421,3 +421,17 @@ it does not establish activity against BRCA1.
 
 Validation: 129 automated tests passed. The live browser and command-line
 lookups for aspirin both returned CID 2244 and the same response checksum.
+
+## Milestone 16: Compound details by PubChem CID
+
+Search for a compound at `/compounds`, then click **View compound details**
+beside a matching CID. The details page displays the molecular formula,
+molecular weight in g/mol, PubChem source link, retrieval time, saved
+response path, and SHA-256 checksum.
+
+The same lookup can be run from Command Prompt:
+`.venv\Scripts\python.exe -m app.compound_details 241`
+
+Browser check: CID 241 (benzene) displayed C6H6 and 78.11 g/mol.
+These properties identify and describe a compound; they do not establish
+biological activity against BRCA1.
