@@ -435,3 +435,13 @@ The same lookup can be run from Command Prompt:
 Browser check: CID 241 (benzene) displayed C6H6 and 78.11 g/mol.
 These properties identify and describe a compound; they do not establish
 biological activity against BRCA1.
+
+## Milestone 17: Compare two compounds by PubChem CID
+
+Open `/compare-compounds` and enter two different PubChem CIDs. The page
+displays molecular formula, molecular weight in g/mol, and a source link
+for each compound, preserving the order entered.
+
+Validation: 137 automated tests passed. Manually compared aspirin (2244)
+and benzene (241) and confirmed that reversing the inputs switched the
+values and source links between columns.

@@ -998,6 +998,7 @@ def compound_lookup_page(name: str | None = None):
     form = f"""
 <section>
 <h2>Find a compound</h2>
+<p><a href="/compare-compounds">Compare two compounds by CID</a></p>
 <form action="/compounds" method="get">
 <label for="compound-name">Compound name</label>
 <input id="compound-name" name="name" value="{text(query)}"
@@ -1077,5 +1078,81 @@ def compound_details_page(cid: str):
 <p class="meta">Saved response: {text(data["raw_file"])}</p>
 <p class="meta">Response SHA-256: {text(data["response_sha256"])}</p>
 {back}
+</section>
+""")
+
+@router.get("/compare-compounds", response_class=HTMLResponse, tags=["Compound lookup"])
+def compare_compounds_page(left: str | None = None, right: str | None = None):
+    """Compare the PubChem properties of two user-selected CIDs."""
+    import re
+    from app.compound_details import CompoundNotFound, fetch_compound_details
+
+    first = (left or "").strip()
+    second = (right or "").strip()
+
+    form = f"""
+<section>
+<h2>Compare two compounds</h2>
+<form action="/compare-compounds" method="get">
+<p><label>First PubChem CID
+<input name="left" value="{text(first)}" placeholder="2244"
+       inputmode="numeric" pattern="[1-9][0-9]*" required></label></p>
+<p><label>Second PubChem CID
+<input name="right" value="{text(second)}" placeholder="241"
+       inputmode="numeric" pattern="[1-9][0-9]*" required></label></p>
+<button type="submit">Compare compounds</button>
+</form>
+<p><a href="/compounds">Find a CID by compound name</a></p>
+</section>
+"""
+
+    if left is None and right is None:
+        return page(form)
+
+    # Validate both inputs before contacting PubChem.
+    if not all(re.fullmatch(r"[1-9][0-9]*", cid) for cid in (first, second)):
+        return page(form + "<p>Enter two positive whole-number CIDs.</p>",
+                    status_code=400)
+    if first == second:
+        return page(form + "<p>Choose two different CIDs.</p>", status_code=400)
+
+    records = []
+    for cid in (first, second):
+        try:
+            records.append(fetch_compound_details(cid))
+        except CompoundNotFound as exc:
+            return page(form + f"<p>{text(exc)}</p>", status_code=404)
+        except RuntimeError as exc:
+            return page(form + f"<p>Lookup failed for CID {text(cid)}: "
+                        f"{text(exc)}</p>", status_code=502)
+        except OSError:
+            return page(form + "<p>Could not save the PubChem response.</p>",
+                        status_code=500)
+
+    a, b = records
+
+    def source_link(record):
+        return (
+            f'<a href="{text(record["record_url"])}">'
+            f'PubChem CID {text(record["cid"])}</a>'
+        )
+
+    return page(form + f"""
+<section>
+<h2>Comparison results</h2>
+<table cellpadding="8">
+<caption>Properties reported by PubChem</caption>
+<thead>
+<tr><th scope="col">Property</th>
+<th scope="col">{source_link(a)}</th><th scope="col">{source_link(b)}</th></tr>
+</thead>
+<tbody>
+<tr><th scope="row">Molecular formula</th>
+<td>{text(a["molecular_formula"])}</td><td>{text(b["molecular_formula"])}</td></tr>
+<tr><th scope="row">Molecular weight (g/mol)</th>
+<td>{text(a["molecular_weight_g_mol"])}</td><td>{text(b["molecular_weight_g_mol"])}</td></tr>
+</tbody>
+</table>
+<p>These properties alone do not establish activity against BRCA1.</p>
 </section>
 """)
