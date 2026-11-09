@@ -411,3 +411,13 @@ Browser validation: The two saved bundles contained 10 articles each.
 Three appeared only in the newer bundle, three only in the older bundle,
 and seven in both. None of the seven shared titles or abstracts changed.
 The saved abstract for PMID 37797621 opened from the comparison page.
+
+## Milestone 15: PubChem compound lookup
+
+Open `/compounds` and enter a compound name to see all matching PubChem
+CIDs and source links. The page shows the retrieval time, saved response
+path, and SHA-256 checksum. A name match identifies a chemical record;
+it does not establish activity against BRCA1.
+
+Validation: 129 automated tests passed. The live browser and command-line
+lookups for aspirin both returned CID 2244 and the same response checksum.
