@@ -78,6 +78,7 @@ button {
 <body>
 <main>
 <h1>BRCA1 Evidence Explorer</h1>
+<p><a href="/">Evidence viewer</a> | <a href="/compare-bundles">Compare bundles</a></p>
 <p class="notice">
 Research use only. Not for clinical decisions.
 This page displays saved evidence and separately labelled imported AI summaries.
@@ -824,6 +825,166 @@ The recorded review status is shown above.</p>
             "<section><h2>Summary report could not be created</h2>"
             f"<p>{text(exc)}</p>"
             "<p>Check the summary, evidence bundle, and raw files.</p>"
+            "</section>",
+            status_code=500,
+        )
+
+@router.get("/compare-bundles", response_class=HTMLResponse, tags=["Local viewer"])
+def compare_bundles_page(
+    baseline: str | None = None,
+    comparison: str | None = None,
+):
+    """Choose and compare two saved evidence bundles."""
+    from app import compare
+
+    try:
+        directory = (storage.PROJECT_ROOT / "data/bundles").resolve()
+        candidates = [
+            path
+            for path in directory.glob("brca1-*.json")
+            if path.is_file() and path.resolve().is_relative_to(directory)
+        ]
+        candidates.sort(
+            key=lambda path: (path.stat().st_mtime_ns, path.name),
+            reverse=True,
+        )
+        available = {path.name for path in candidates}
+
+        for selected in (baseline, comparison):
+            if selected is not None and selected not in available:
+                return page(
+                    "<p>The requested bundle is not available.</p>"
+                    '<p><a href="/compare-bundles">Choose bundles</a></p>',
+                    status_code=404,
+                )
+
+        if not candidates:
+            return page(
+                "<section><h2>No saved bundles available</h2>"
+                "<p>Create evidence bundles before comparing them.</p>"
+                '<p><a href="/">Return to the viewer</a></p></section>'
+            )
+
+        def options(selected):
+            items = ['<option value="">Choose a bundle</option>']
+            for path in candidates:
+                chosen = " selected" if path.name == selected else ""
+                items.append(
+                    f'<option value="{text(path.name)}"{chosen}>'
+                    f"{text(path.name)}</option>"
+                )
+            return "".join(items)
+
+        body = f"""
+<section>
+<h2>Compare evidence bundles</h2>
+<p>Select a baseline and a comparison bundle.
+Their roles are determined by your selections, not by their dates.</p>
+<form action="/compare-bundles" method="get">
+<label for="baseline">Baseline bundle</label>
+<select id="baseline" name="baseline" required>
+{options(baseline)}
+</select>
+<label for="comparison">Comparison bundle</label>
+<select id="comparison" name="comparison" required>
+{options(comparison)}
+</select>
+<button type="submit">Compare bundles</button>
+</form>
+<p><a href="/">Return to the evidence viewer</a></p>
+</section>
+"""
+
+        if baseline is None or comparison is None:
+            return page(body)
+
+        result = compare.compare_bundles(baseline, comparison)
+        counts = result["counts"]
+
+        body += "<section><h2>Comparison results</h2>"
+        for key, label in (
+            ("baseline", "Baseline"),
+            ("comparison", "Comparison"),
+        ):
+            metadata = result[key]
+            body += (
+                f"<h3>{label}</h3>"
+                f'<p class="meta">{text(metadata["filename"])}</p>'
+                f'<p class="meta">SHA-256: {text(metadata["sha256"])}</p>'
+                f'<p>Raw files verified: {metadata["raw_files_verified"]}</p>'
+                f'<p>Query: {text(metadata["query"])}</p>'
+                f'<p>Ordering: {text(metadata["sort"])}</p>'
+            )
+
+        body += "<dl>"
+        for key, label in (
+            ("baseline_articles", "Articles in baseline"),
+            ("comparison_articles", "Articles in comparison"),
+            ("only_in_comparison", "Only in comparison"),
+            ("only_in_baseline", "Only in baseline"),
+            ("shared", "Shared articles"),
+            ("shared_with_text_changes", "Shared articles with text changes"),
+        ):
+            body += f"<dt>{label}</dt><dd>{counts[key]}</dd>"
+        body += "</dl></section>"
+
+        body += "<section><h2>How to interpret these results</h2><ul>"
+        for limitation in result["limitations"]:
+            body += f"<li>{text(limitation)}</li>"
+        body += "</ul></section>"
+
+        for key, heading in (
+            ("only_in_comparison", "Articles only in comparison"),
+            ("only_in_baseline", "Articles only in baseline"),
+        ):
+            body += f"<section><h2>{heading}</h2>"
+            if not result[key]:
+                body += "<p>None.</p>"
+            for article in result[key]:
+                body += (
+                    f'<h3>{text(article["title"])}</h3>'
+                    f'<p><a href="{text(article["record_url"])}">'
+                    f'PMID {text(article["pmid"])}</a></p>'
+                    "<details><summary>Read saved abstract</summary>"
+                    '<div class="abstract">'
+                    + text(article["abstract"] or "No abstract available.")
+                    + "</div></details>"
+                )
+            body += "</section>"
+
+        body += "<section><h2>Shared articles</h2>"
+        if not result["shared_pmids"]:
+            body += "<p>None.</p>"
+        else:
+            body += "<ul>"
+            for pmid in result["shared_pmids"]:
+                body += (
+                    f'<li><a href="https://pubmed.ncbi.nlm.nih.gov/{text(pmid)}/">'
+                    f"PMID {text(pmid)}</a></li>"
+                )
+            body += "</ul>"
+
+        body += "<h3>Changes to saved titles or abstracts</h3>"
+        if not result["shared_text_changes"]:
+            body += "<p>No text changes among shared articles.</p>"
+        else:
+            body += "<ul>"
+            for change in result["shared_text_changes"]:
+                fields = ", ".join(change["changed_fields"])
+                body += (
+                    f'<li>PMID {text(change["pmid"])}: '
+                    f"{text(fields)}</li>"
+                )
+            body += "</ul>"
+        body += "</section>"
+
+        return page(body)
+
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        return page(
+            "<section><h2>Comparison could not be completed</h2>"
+            f"<p>{text(exc)}</p>"
+            '<p><a href="/compare-bundles">Choose bundles again</a></p>'
             "</section>",
             status_code=500,
         )
