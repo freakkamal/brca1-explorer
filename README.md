@@ -445,3 +445,15 @@ for each compound, preserving the order entered.
 Validation: 137 automated tests passed. Manually compared aspirin (2244)
 and benzene (241) and confirmed that reversing the inputs switched the
 values and source links between columns.
+
+## Milestone 18: Search saved literature for mentions
+
+The `/literature-mentions` page searches titles and abstracts in a selected
+BRCA1 evidence bundle. Results show matching passages and links to PubMed.
+The search uses saved evidence and does not require an API key.
+
+Searches are case-insensitive and do not expand synonyms. A match shows
+that a term appears in the saved text; it does not establish a drug–target
+interaction. Zero matches applies only to the selected bundle.
+
+Validation: 140 automated tests passed.
