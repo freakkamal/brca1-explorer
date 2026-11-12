@@ -998,6 +998,7 @@ def compound_lookup_page(name: str | None = None):
     form = f"""
 <section>
 <h2>Find a compound</h2>
+<p><a href="/literature-mentions">Find mentions in saved BRCA1 literature</a></p>
 <p><a href="/compare-compounds">Compare two compounds by CID</a></p>
 <form action="/compounds" method="get">
 <label for="compound-name">Compound name</label>
@@ -1156,3 +1157,77 @@ def compare_compounds_page(left: str | None = None, right: str | None = None):
 <p>These properties alone do not establish activity against BRCA1.</p>
 </section>
 """)
+
+@router.get("/literature-mentions", response_class=HTMLResponse, tags=["Local viewer"])
+def literature_mentions_page(bundle: str | None = None, q: str = ""):
+    from app.mentions import find_mentions
+
+    root = (storage.PROJECT_ROOT / "data/bundles").resolve()
+    back = '<p><a href="/">Return to the evidence viewer</a></p>'
+
+    try:
+        names = sorted(
+            path.name for path in root.glob("brca1-*.json")
+            if path.is_file() and path.resolve().is_relative_to(root)
+        )
+        if bundle is not None and bundle not in names:
+            return page("<p>Selected bundle not found.</p>" + back, status_code=404)
+        if not names:
+            return page("<p>No saved evidence bundles are available.</p>" + back)
+
+        options = "".join(
+            f'<option value="{text(name)}"'
+            + (" selected" if name == bundle else "")
+            + f">{text(name)}</option>"
+            for name in names
+        )
+        body = f"""
+<section>
+<h2>Find mentions in saved literature</h2>
+<form action="/literature-mentions" method="get">
+<label for="bundle">Evidence bundle</label>
+<select id="bundle" name="bundle" required>{options}</select>
+<label for="q">Compound name or phrase</label>
+<input id="q" name="q" value="{text(q)}" maxlength="120"
+       placeholder="Example: olaparib" required>
+<button type="submit">Find mentions</button>
+</form>
+<p>Searches the saved titles and abstracts for the text you enter.
+Synonyms and abbreviations are not expanded.</p>
+</section>
+"""
+        if bundle is None:
+            return page(body + back)
+        if not q.strip() or len(q.strip()) > 120:
+            return page(body + "<p>Enter 1 to 120 characters.</p>" + back,
+                        status_code=400)
+
+        result = find_mentions(bundle, q)
+        matches = result["matches"]
+        body += (
+            "<section><h2>Text mentions</h2>"
+            f"<p>{len(matches)} of {result['article_count']} saved articles "
+            f"matched <strong>{text(q.strip())}</strong>.</p>"
+            f'<p class="meta">Bundle SHA-256: {text(result["sha256"])}</p>'
+            "<p>A text mention alone does not establish binding, activity "
+            "against BRCA1, or treatment benefit.</p></section>"
+        )
+
+        for item in matches:
+            pmid = text(item["pmid"])
+            body += (
+                f"<article><h3>{text(item['title'])}</h3>"
+                f'<p><a href="https://pubmed.ncbi.nlm.nih.gov/{pmid}/">'
+                f"PubMed PMID: {pmid}</a></p>"
+            )
+            if item["title_match"]:
+                body += "<p><strong>Match in title</strong></p>"
+            for passage in item["passages"]:
+                body += f"<blockquote>{text(passage)}</blockquote>"
+            body += "</article>"
+
+        return page(body + back)
+
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        return page("<p>Could not search the saved evidence: "
+                    + text(exc) + "</p>" + back, status_code=500)

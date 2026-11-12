@@ -217,3 +217,41 @@ def test_comparison_page_rejects_missing_bundle(make_bundle, web_client):
 
     assert response.status_code == 404
     assert "Comparison results" not in response.text
+
+def test_mentions_return_title_and_only_matching_passage(make_bundle):
+    from app.mentions import find_mentions
+
+    make_bundle("brca1-mentions.json", [
+        article("101", title="Aspirin study",
+                abstract="Background sentence. ASPIRIN was measured."),
+        article("202", title="Other record", abstract=None),
+    ])
+    result = find_mentions("brca1-mentions.json", "aspirin")
+
+    assert result["article_count"] == 2
+    assert [m["pmid"] for m in result["matches"]] == ["101"]
+    assert result["matches"][0]["title_match"] is True
+    assert result["matches"][0]["passages"] == ["ASPIRIN was measured."]
+
+
+def test_mentions_do_not_match_inside_longer_words(make_bundle):
+    from app.mentions import find_mentions
+
+    make_bundle("brca1-mentions.json", [
+        article("101", title="BRCA10 example", abstract=None),
+    ])
+    assert find_mentions("brca1-mentions.json", "BRCA1")["matches"] == []
+
+
+def test_mentions_page_links_source_and_escapes_passage(make_bundle, web_client):
+    make_bundle("brca1-mentions.json", [
+        article("101", title="Example", abstract="Aspirin: A < B."),
+    ])
+    response = web_client.get("/literature-mentions", params={
+        "bundle": "brca1-mentions.json", "q": "aspirin",
+    })
+
+    assert response.status_code == 200
+    assert "1 of 1 saved articles" in response.text
+    assert 'href="https://pubmed.ncbi.nlm.nih.gov/101/"' in response.text
+    assert "Aspirin: A &lt; B." in response.text
