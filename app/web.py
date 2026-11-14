@@ -1037,12 +1037,25 @@ activity against BRCA1.</p>
         f'<a href="/compounds/{text(match["cid"])}">View compound details</a></li>'
         for match in result["matches"]
     )
+    if len(query) <= 120:
+        from urllib.parse import urlencode
 
+        mentions_url = "/literature-mentions?" + urlencode({"q": query})
+        mentions_link = (
+            f'<p><a href="{text(mentions_url)}">'
+            f'Search saved BRCA1 literature for “{text(query)}”</a></p>'
+        )
+    else:
+        mentions_link = (
+            '<p><a href="/literature-mentions">Search saved BRCA1 literature</a> '
+            'using a shorter name (120 characters or fewer).</p>'
+        )
     return page(form + f"""
 <section>
 <h2>Results for {text(query)}</h2>
 <p>Matching compound IDs: {len(result["matches"])}</p>
 <ul>{items}</ul>
+{mentions_link}
 <p>Retrieved (UTC): {text(result["retrieved_at_utc"])}</p>
 <p class="meta">Saved response: {text(result["raw_file"])}</p>
 <p class="meta">Response SHA-256: {text(result["response_sha256"])}</p>
@@ -1137,7 +1150,7 @@ def compare_compounds_page(left: str | None = None, right: str | None = None):
             f'<a href="{text(record["record_url"])}">'
             f'PubChem CID {text(record["cid"])}</a>'
         )
-
+    
     return page(form + f"""
 <section>
 <h2>Comparison results</h2>
