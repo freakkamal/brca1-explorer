@@ -1225,7 +1225,9 @@ Synonyms and abbreviations are not expanded.</p>
             "<p>A text mention alone does not establish binding, activity "
             "against BRCA1, or treatment benefit.</p></section>"
         )
-
+        from urllib.parse import urlencode
+        download_url = "/download-literature-mentions?" + urlencode({"bundle": bundle, "q": q.strip()})
+        body += f'<p><a href="{text(download_url)}">Download these results (JSON)</a></p>'
         for item in matches:
             pmid = text(item["pmid"])
             body += (

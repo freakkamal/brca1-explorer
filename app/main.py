@@ -133,3 +133,7 @@ def brca1_literature():
 from app.web import router as web_router
 
 app.include_router(web_router)
+
+from app.mentions_export import router as mentions_export_router
+
+app.include_router(mentions_export_router)
