@@ -457,3 +457,13 @@ that a term appears in the saved text; it does not establish a drug–target
 interaction. Zero matches applies only to the selected bundle.
 
 Validation: 140 automated tests passed.
+
+## Milestone 20: Export literature search results
+
+The literature search page offers a JSON download for the selected evidence
+bundle and search term. The export records the bundle filename and SHA-256,
+the number of articles searched and matched, and the matching passages and
+PubMed IDs. A search with no matches produces an empty results list.
+
+The search covers only titles and abstracts in the selected bundle.
+A text match does not establish that a compound acts on BRCA1.
