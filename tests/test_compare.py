@@ -321,3 +321,26 @@ def test_export_refuses_changed_raw_file(make_bundle):
         assert after.status_code == 400, after.text
         assert "checksum mismatch" in after.json()["detail"].lower()
         assert "content-disposition" not in after.headers
+
+def test_compare_mentions_groups_matching_pmids(make_bundle):
+    from app.compare_mentions import compare_mentions
+
+    first = make_bundle("brca1-first.json", [
+        article("101", "Shared GPX4 example"),
+        article("102", "GPX4 example in first bundle"),
+        article("104", "Unrelated example"),
+    ])
+    second = make_bundle("brca1-second.json", [
+        article("101", "Shared GPX4 example"),
+        article("103", "GPX4 example in second bundle"),
+        article("104", "Unrelated example"),
+    ])
+
+    result = compare_mentions(first.name, second.name, "GPX4")
+
+    assert result["matched_in_both"] == ["101"]
+    assert result["matched_only_in_first"] == ["102"]
+    assert result["matched_only_in_second"] == ["103"]
+    for side in ("first_bundle", "second_bundle"):
+        assert result[side]["articles_searched"] == 3
+        assert result[side]["articles_matched"] == 2

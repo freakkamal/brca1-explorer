@@ -202,3 +202,7 @@ belongs to the bundle.
 
 Integrity check. Using a synthetic bundle, the JSON export initially returned one matching article. After one referenced raw file was changed without updating its recorded checksum, the same request returned HTTP 400 with a checksum mismatch and no download attachment. This demonstrates detection of a change relative to the saved bundle. It does not establish the scientific accuracy of the original source.
 
+
+
+A literal search for GPX4 matched one of ten articles in each of two saved BRCA1 bundles. Both matches referred to PMID 39265497. Neither bundle contained an additional GPX4-matching article. This comparison describes the contents of the two saved snapshots.
+
