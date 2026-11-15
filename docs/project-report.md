@@ -132,3 +132,31 @@ by its SHA-256 checksum. This demonstrates software behavior using synthetic
 
 text; the October 18 bundle is the separate worked example using real records.
 
+
+
+\## Milestone 23: Fresh-copy reproducibility check
+
+
+
+I ran the synthetic literature-export example on Windows from a fresh
+
+checkout in brca1-reader-check using a separate Python environment.
+
+
+
+\- Tested commit: \[paste commit ID here]
+
+\- Python: 3.13.16
+
+\- pytest: 9.1.1
+
+\- Result: 1 passed, 1 warning in 1.50s
+
+\- Warning: Starlette reported a deprecation in its test client.
+
+
+
+The test checked both a matching search and a zero-match search using
+
+synthetic data. This was a fresh-copy check on the same PC.
+
