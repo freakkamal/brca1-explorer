@@ -198,3 +198,7 @@ The software's citation check alone establishes only that the cited PMID
 
 belongs to the bundle.
 
+
+
+Integrity check. Using a synthetic bundle, the JSON export initially returned one matching article. After one referenced raw file was changed without updating its recorded checksum, the same request returned HTTP 400 with a checksum mismatch and no download attachment. This demonstrates detection of a change relative to the saved bundle. It does not establish the scientific accuracy of the original source.
+

@@ -295,3 +295,29 @@ def test_offline_literature_export_example(make_bundle):
                 assert result["matches"][0]["passages"] == [
                     "GPX4 is the example search term."
                 ]
+
+def test_export_refuses_changed_raw_file(make_bundle):
+    """The same export succeeds before a raw file changes and fails after."""
+    from fastapi.testclient import TestClient
+    from app.main import app
+
+    bundle_path = make_bundle(
+        "brca1-integrity-demo.json",
+        [article("101", "Synthetic article", "GPX4 is the example term.")],
+    )
+    params = {"bundle": bundle_path.name, "q": "GPX4"}
+
+    with TestClient(app) as client:
+        before = client.get("/download-literature-mentions", params=params)
+        assert before.status_code == 200, before.text
+        assert before.json()["articles_matched"] == 1
+
+        # Change only the temporary raw file. Keep the bundle hash record intact.
+        raw_path = bundle_path.parents[1] / "raw" / "uniprot" / "example.json"
+        assert raw_path.is_file()
+        raw_path.write_bytes(b'{"example": false}')
+
+        after = client.get("/download-literature-mentions", params=params)
+        assert after.status_code == 400, after.text
+        assert "checksum mismatch" in after.json()["detail"].lower()
+        assert "content-disposition" not in after.headers
