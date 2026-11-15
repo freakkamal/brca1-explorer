@@ -255,3 +255,43 @@ def test_mentions_page_links_source_and_escapes_passage(make_bundle, web_client)
     assert "1 of 1 saved articles" in response.text
     assert 'href="https://pubmed.ncbi.nlm.nih.gov/101/"' in response.text
     assert "Aspirin: A &lt; B." in response.text
+
+def test_offline_literature_export_example(make_bundle):
+    """Run the real search and JSON export on two synthetic articles."""
+    import hashlib
+
+    from fastapi.testclient import TestClient
+    from app.main import app
+
+    bundle_path = make_bundle(
+        "brca1-synthetic-demo.json",
+        [
+            article("101", "Synthetic article A", "GPX4 is the example search term."),
+            article("102", "Synthetic article B", "This example discusses DNA repair."),
+        ],
+    )
+    expected_hash = hashlib.sha256(bundle_path.read_bytes()).hexdigest()
+
+    with TestClient(app) as client:
+        for term, expected_ids in [
+            ("GPX4", ["101"]),
+            ("zzzz-no-match-123", []),
+        ]:
+            response = client.get(
+                "/download-literature-mentions",
+                params={"bundle": bundle_path.name, "q": term},
+            )
+            assert response.status_code == 200, response.text
+
+            result = response.json()
+            assert result["query"] == term
+            assert result["bundle_filename"] == bundle_path.name
+            assert result["bundle_sha256"] == expected_hash
+            assert result["articles_searched"] == 2
+            assert result["articles_matched"] == len(expected_ids)
+            assert [item["pmid"] for item in result["matches"]] == expected_ids
+
+            if expected_ids:
+                assert result["matches"][0]["passages"] == [
+                    "GPX4 is the example search term."
+                ]

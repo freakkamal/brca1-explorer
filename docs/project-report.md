@@ -104,3 +104,31 @@ for one saved bundle. It does not evaluate how comprehensively the search
 
 finds relevant literature or whether a compound acts on BRCA1.
 
+
+
+\## Run the offline example
+
+
+
+From the project root, with the project and test dependencies installed, run:
+
+
+
+```text
+
+python -m pytest -q tests/test\_compare.py::test\_offline\_literature\_export\_example
+
+```
+
+
+
+The example creates two synthetic articles in a temporary folder. It checks
+
+that the JSON export returns one matching passage for GPX4 and no matches
+
+for a deliberately absent term. Both exports must identify the same bundle
+
+by its SHA-256 checksum. This demonstrates software behavior using synthetic
+
+text; the October 18 bundle is the separate worked example using real records.
+
