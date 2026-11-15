@@ -232,3 +232,23 @@ These counts describe the two saved bundles. The Cezanne result does not
 
 establish when the article was published or when it first appeared in PubMed.
 
+
+
+\## Milestone 27: Browser comparison of literature mentions
+
+
+
+Searching for Cezanne in the browser matched 0 of 10 baseline articles
+
+and 1 of 10 comparison articles. The browser linked PMID 41359628 under
+
+“Matched only in comparison,” agreeing with the command-line result.
+
+Clearing the search term restored the full comparison: 7 shared articles
+
+and 3 unique to each bundle. These counts describe the saved snapshots.
+
+
+
+Automated test run: 145 passed, 1 warning in 3.63 seconds.
+

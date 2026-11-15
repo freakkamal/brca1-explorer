@@ -834,6 +834,7 @@ The recorded review status is shown above.</p>
 def compare_bundles_page(
     baseline: str | None = None,
     comparison: str | None = None,
+    q: str = "",
 ):
     """Choose and compare two saved evidence bundles."""
     from app import compare
@@ -890,6 +891,10 @@ Their roles are determined by your selections, not by their dates.</p>
 <select id="comparison" name="comparison" required>
 {options(comparison)}
 </select>
+<label for="mention-query">Search term (optional)</label>
+<input id="mention-query" name="q" value="{text(q)}"
+       maxlength="120" placeholder="Example: Cezanne">
+<p>Leave blank to compare all articles, or enter a term to compare text mentions.</p>
 <button type="submit">Compare bundles</button>
 </form>
 <p><a href="/">Return to the evidence viewer</a></p>
@@ -897,6 +902,53 @@ Their roles are determined by your selections, not by their dates.</p>
 """
 
         if baseline is None or comparison is None:
+            return page(body)
+
+        term = q.strip()
+        if term:
+            from app.compare_mentions import compare_mentions
+
+            if baseline == comparison:
+                return page(body + "<p>Choose two different bundles.</p>",
+                            status_code=400)
+            if len(term) > 120:
+                return page(body + "<p>Enter a term of 120 characters or fewer.</p>",
+                            status_code=400)
+
+            mentions = compare_mentions(baseline, comparison, term)
+            body += f"<section><h2>Text mentions: {text(term)}</h2>"
+
+            for key, label in (
+                ("first_bundle", "Baseline"),
+                ("second_bundle", "Comparison"),
+            ):
+                info = mentions[key]
+                body += (
+                    f"<h3>{label}</h3>"
+                    f'<p class="meta">{text(info["filename"])}</p>'
+                    f'<p>{info["articles_matched"]} of '
+                    f'{info["articles_searched"]} articles matched.</p>'
+                )
+
+            for key, label in (
+                ("matched_in_both", "Matched in both bundles"),
+                ("matched_only_in_first", "Matched only in baseline"),
+                ("matched_only_in_second", "Matched only in comparison"),
+            ):
+                body += f"<h3>{label}</h3>"
+                pmids = mentions[key]
+                if not pmids:
+                    body += "<p>None.</p>"
+                    continue
+                body += "<ul>"
+                for pmid in pmids:
+                    body += (
+                        f'<li><a href="https://pubmed.ncbi.nlm.nih.gov/{text(pmid)}/">'
+                        f'PMID {text(pmid)}</a></li>'
+                    )
+                body += "</ul>"
+
+            body += "<p>Counts refer to the saved titles and abstracts in these two bundles.</p></section>"
             return page(body)
 
         result = compare.compare_bundles(baseline, comparison)
