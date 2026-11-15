@@ -160,3 +160,41 @@ The test checked both a matching search and a zero-match search using
 
 synthetic data. This was a fresh-copy check on the same PC.
 
+
+
+\## Worked example: tracing a summary claim to its source
+
+
+
+The October 18 BRCA1 bundle contained 10 PubMed records. Finding 3 in
+
+the manually imported AI summary described experiments combining GPX4
+
+and PARP inhibition. It cited PMID 39265497.
+
+
+
+| Step | Evidence recorded |
+
+|---|---|
+
+| Identify the input | Saved bundle: `brca1-cbbd29b367a3494db61bb4e1e2cdf07a.json` |
+
+| Identify the claim | Finding 3 described results in cancer cells, patient-derived organoids, and xenografts. |
+
+| Locate the source | \[PubMed PMID 39265497](https://pubmed.ncbi.nlm.nih.gov/39265497/); the abstract was also available in the saved bundle. |
+
+| Inspect the review | On 18 October 2026, the reviewer recorded checking the experimental models, the combination-treatment finding, and the distinction between preclinical results and patient benefit. |
+
+| Report the scope | Status: review in progress. Only this finding was checked, using the saved abstract. The full text and the remaining findings were not assessed in this review. |
+
+
+
+This example shows what the review record lets a reader establish: which
+
+claim was checked, which source was used, and where the review stopped.
+
+The software's citation check alone establishes only that the cited PMID
+
+belongs to the bundle.
+
