@@ -206,3 +206,29 @@ Integrity check. Using a synthetic bundle, the JSON export initially returned on
 
 A literal search for GPX4 matched one of ten articles in each of two saved BRCA1 bundles. Both matches referred to PMID 39265497. Neither bundle contained an additional GPX4-matching article. This comparison describes the contents of the two saved snapshots.
 
+
+
+\## Comparing search results across two saved bundles
+
+
+
+Each bundle contained 10 articles. The same literal search was run against
+
+the saved titles and abstracts in each bundle.
+
+
+
+| Search term | October 15 bundle | October 18 bundle | Matching PMID |
+
+|---|---:|---:|---|
+
+| GPX4 | 1 of 10 | 1 of 10 | 39265497 in both |
+
+| Cezanne | 0 of 10 | 1 of 10 | 41359628 in the October 18 bundle only |
+
+
+
+These counts describe the two saved bundles. The Cezanne result does not
+
+establish when the article was published or when it first appeared in PubMed.
+
