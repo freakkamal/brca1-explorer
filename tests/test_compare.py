@@ -344,3 +344,24 @@ def test_compare_mentions_groups_matching_pmids(make_bundle):
     for side in ("first_bundle", "second_bundle"):
         assert result[side]["articles_searched"] == 3
         assert result[side]["articles_matched"] == 2
+
+def test_multi_mentions_counts_each_article_once(make_bundle):
+    from app.multi_mentions import search_terms
+
+    bundle = make_bundle("brca1-multi-test.json", [
+        article("101", "Cezanne example", "This passage also mentions Ube2S."),
+        article("102", "Ube2S example", "Only the second term appears here."),
+        article("103", "Unrelated example", "Neither term appears here."),
+    ])
+
+    result = search_terms(bundle.name, ["Cezanne", "Ube2S", "no-such-term"])
+
+    assert result["matches_per_term"] == {
+        "Cezanne": 1,
+        "Ube2S": 2,
+        "no-such-term": 0,
+    }
+    assert result["unique_articles_matched"] == 2
+    assert [item["pmid"] for item in result["articles"]] == ["101", "102"]
+    assert result["articles"][0]["matched_terms"] == ["Cezanne", "Ube2S"]
+    assert result["articles"][1]["matched_terms"] == ["Ube2S"]

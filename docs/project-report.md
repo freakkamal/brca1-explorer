@@ -261,3 +261,5 @@ PMID 41359628, marked the title match, and showed three matching passages
 from the saved abstract. This demonstrates that a reader can trace a count
 to its source text without retyping the query or reselecting the bundle.
 
+Milestone 29 — Multiple-term literature search. In a synthetic three-article bundle, one search term matched one article, another matched two, and a third matched none. The combined result contained two distinct PMIDs. The article matching both terms appeared once and retained both matched terms.
+
