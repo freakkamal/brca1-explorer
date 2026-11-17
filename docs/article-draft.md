@@ -40,6 +40,80 @@ summary accuracy, or drug activity.
 
 
 
+\## Methods
+
+
+
+\### Evidence collection
+
+
+
+The evaluation used a saved BRCA1 literature bundle from October 18, 2026.
+
+The PubMed query was `BRCA1\[Title/Abstract]`, ordered by relevance. At
+
+retrieval, the search reported 23,328 matching records; the bundle included
+
+10\. The evaluation used the saved titles and abstracts rather than rerunning
+
+the live PubMed query.
+
+
+
+Bundle filename: `brca1-cbbd29b367a3494db61bb4e1e2cdf07a.json`
+
+
+
+Bundle SHA-256: `0dc0f835f5afe0831d22f6653f22aca38a370b63ffa317bdb35d7598257698ed`
+
+
+
+\### Manual and application searches
+
+
+
+Three terms were selected before comparing results: `ferroptosis`,
+
+`antibodies`, and `oocytes`. For each term, the project author inspected
+
+the saved titles and abstracts and recorded the PMID of each matching
+
+article. A match required the whole word, ignoring capitalization. An
+
+article counted once per term even if the word appeared several times.
+
+Synonyms, inferred topics, and text in the imported AI summary were excluded.
+
+
+
+The same three terms were then entered into the application's multiple-term
+
+search for the same bundle. Agreement was assessed separately for each term
+
+by comparing the manually recorded PMIDs with the PMIDs returned by the
+
+application. Equal counts alone were insufficient: the identifiers also
+
+had to match.
+
+
+
+\### Overlapping matches
+
+
+
+A separate demonstration used `Cezanne` and `Ube2S` to check how the
+
+application displayed an article matching more than one term. The check
+
+was whether the PMID appeared once in the combined article list while
+
+retaining both matched terms. This demonstration was separate from the
+
+three-term manual evaluation.
+
+
+
 \## Results
 
 
