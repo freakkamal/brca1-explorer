@@ -923,11 +923,24 @@ Their roles are determined by your selections, not by their dates.</p>
                 ("second_bundle", "Comparison"),
             ):
                 info = mentions[key]
+                if info["articles_matched"]:
+                    from urllib.parse import urlencode
+
+                    passage_url = "/literature-mentions?" + urlencode(
+                        {"bundle": info["filename"], "q": term}
+                    )
+                    passage_link = (
+                        f'<p><a href="{text(passage_url)}">'
+                        f'Read matching passages: {text(label)}</a></p>'
+                    )
+                else:
+                    passage_link = ""
                 body += (
                     f"<h3>{label}</h3>"
                     f'<p class="meta">{text(info["filename"])}</p>'
                     f'<p>{info["articles_matched"]} of '
                     f'{info["articles_searched"]} articles matched.</p>'
+                    f"{passage_link}"
                 )
 
             for key, label in (

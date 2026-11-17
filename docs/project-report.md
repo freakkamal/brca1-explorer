@@ -252,3 +252,12 @@ and 3 unique to each bundle. These counts describe the saved snapshots.
 
 Automated test run: 145 passed, 1 warning in 3.63 seconds.
 
+## Milestone 28: From a comparison count to saved passages
+
+In the browser comparison, Cezanne matched 0 of 10 baseline articles and
+1 of 10 comparison articles. Following the comparison passage link opened
+the October 18 bundle with Cezanne already selected. The page displayed
+PMID 41359628, marked the title match, and showed three matching passages
+from the saved abstract. This demonstrates that a reader can trace a count
+to its source text without retyping the query or reselecting the bundle.
+
