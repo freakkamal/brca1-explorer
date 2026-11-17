@@ -1262,6 +1262,7 @@ def literature_mentions_page(bundle: str | None = None, q: str = ""):
         body = f"""
 <section>
 <h2>Find mentions in saved literature</h2>
+<p><a href="/multi-mentions">Search several terms in one bundle</a></p>
 <form action="/literature-mentions" method="get">
 <label for="bundle">Evidence bundle</label>
 <select id="bundle" name="bundle" required>{options}</select>

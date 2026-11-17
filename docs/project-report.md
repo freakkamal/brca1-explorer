@@ -271,3 +271,12 @@ terms listed. The control query zzzz-no-match-123 remained visible with
 zero matches. The browser therefore showed two term matches but one
 distinct article.
 
+## Milestone 31: Navigation and multiple-term browser search
+
+Full test suite: [paste the final pytest line here]
+
+The browser test confirmed that the literature search page links to the
+multiple-term search. When Cezanne and Ube2S matched the same test article,
+the page listed the article once and displayed both terms. The unmatched
+term remained visible with a count of zero.
+

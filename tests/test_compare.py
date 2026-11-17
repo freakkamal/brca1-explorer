@@ -365,3 +365,29 @@ def test_multi_mentions_counts_each_article_once(make_bundle):
     assert [item["pmid"] for item in result["articles"]] == ["101", "102"]
     assert result["articles"][0]["matched_terms"] == ["Cezanne", "Ube2S"]
     assert result["articles"][1]["matched_terms"] == ["Ube2S"]
+
+def test_reader_can_find_and_use_multi_search(make_bundle):
+    from fastapi.testclient import TestClient
+    from app.main import app
+
+    bundle = make_bundle("brca1-browser-demo.json", [
+        article("101", "Cezanne example", "This passage mentions Ube2S."),
+    ])
+
+    with TestClient(app) as client:
+        start = client.get("/literature-mentions")
+        assert start.status_code == 200
+        assert 'href="/multi-mentions"' in start.text
+
+        result = client.get("/multi-mentions", params={
+            "bundle": bundle.name,
+            "terms": "Cezanne\nUbe2S\nno-such-term",
+        })
+
+    assert result.status_code == 200, result.text
+    assert "Cezanne: 1" in result.text
+    assert "Ube2S: 1" in result.text
+    assert "no-such-term: 0" in result.text
+    assert "Distinct articles: 1" in result.text
+    assert result.text.count('href="https://pubmed.ncbi.nlm.nih.gov/101/"') == 1
+    assert "Matched terms: Cezanne, Ube2S" in result.text
