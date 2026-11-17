@@ -1311,3 +1311,77 @@ Synonyms and abbreviations are not expanded.</p>
     except (OSError, ValueError, KeyError, TypeError) as exc:
         return page("<p>Could not search the saved evidence: "
                     + text(exc) + "</p>" + back, status_code=500)
+
+
+@router.get("/multi-mentions", response_class=HTMLResponse, tags=["Local viewer"])
+def multi_mentions_page(bundle: str | None = None, terms: str = ""):
+    """Search a saved bundle for any of several user-entered terms."""
+    from app.multi_mentions import search_terms
+
+    try:
+        root = (storage.PROJECT_ROOT / "data/bundles").resolve()
+        names = sorted(
+            path.name for path in root.glob("brca1-*.json")
+            if path.is_file() and path.resolve().is_relative_to(root)
+        )
+
+        if bundle is not None and bundle not in names:
+            return page("<p>Selected bundle not found.</p>", status_code=404)
+        if not names:
+            return page("<p>No saved evidence bundles are available.</p>")
+
+        options = ""
+        for name in names:
+            selected = " selected" if name == bundle else ""
+            options += (
+                f'<option value="{text(name)}"{selected}>{text(name)}</option>'
+            )
+
+        body = f"""
+<section>
+<h2>Search multiple terms in saved literature</h2>
+<form action="/multi-mentions" method="get">
+<label for="bundle">Evidence bundle</label>
+<select id="bundle" name="bundle" required>{options}</select>
+<p><label for="terms">Search terms: enter one per line, up to 10.</label></p>
+<textarea id="terms" name="terms" rows="5" required>{text(terms)}</textarea>
+<p><button type="submit">Search saved articles</button></p>
+</form>
+<p>An article matching several terms appears once in the article list.</p>
+<p><a href="/">Return to the evidence viewer</a></p>
+</section>
+"""
+        if bundle is None:
+            return page(body)
+
+        entered = [line.strip() for line in terms.splitlines() if line.strip()]
+        if not 1 <= len(entered) <= 10 or any(len(term) > 120 for term in entered):
+            return page(
+                body + "<p>Enter 1 to 10 terms, each at most 120 characters.</p>",
+                status_code=400,
+            )
+
+        result = search_terms(bundle, entered)
+        body += "<section><h2>Matches per term</h2><ul>"
+        for term, count in result["matches_per_term"].items():
+            body += f"<li>{text(term)}: {count}</li>"
+
+        body += (
+            "</ul>"
+            f'<p><strong>Distinct articles: {result["unique_articles_matched"]}'
+            "</strong></p>"
+            f'<p class="meta">Bundle SHA-256: {text(result["bundle_sha256"])}</p>'
+        )
+        for item in result["articles"]:
+            pmid = text(item["pmid"])
+            matched = text(", ".join(item["matched_terms"]))
+            body += (
+                f'<article><h3>{text(item["title"])}</h3>'
+                f'<p><a href="https://pubmed.ncbi.nlm.nih.gov/{pmid}/">'
+                f'PMID {pmid}</a></p><p>Matched terms: {matched}</p></article>'
+            )
+
+        return page(body + "</section>")
+
+    except (OSError, ValueError, KeyError, TypeError) as exc:
+        return page(f"<p>Could not search this bundle: {text(exc)}</p>", status_code=500)

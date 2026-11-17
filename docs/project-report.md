@@ -263,3 +263,11 @@ to its source text without retyping the query or reselecting the bundle.
 
 Milestone 29 — Multiple-term literature search. In a synthetic three-article bundle, one search term matched one article, another matched two, and a third matched none. The combined result contained two distinct PMIDs. The article matching both terms appeared once and retained both matched terms.
 
+## Milestone 30: Multiple-term search in the browser
+
+In the October 18 saved bundle, Cezanne and Ube2S each matched one article.
+Both matched PMID 41359628, which appeared once in the results with both
+terms listed. The control query zzzz-no-match-123 remained visible with
+zero matches. The browser therefore showed two term matches but one
+distinct article.
+
