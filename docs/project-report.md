@@ -280,3 +280,5 @@ multiple-term search. When Cezanne and Ube2S matched the same test article,
 the page listed the article once and displayed both terms. The unmatched
 term remained visible with a count of zero.
 
+Across the 10 saved titles and abstracts in the October 18 BRCA1 bundle, manual review and the app returned identical PMID sets for all three tested terms. Each term matched one distinct article. This agreement applies to these three whole-word searches in this bundle; it does not measure how well the app finds articles that use synonyms.
+

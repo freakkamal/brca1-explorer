@@ -22,9 +22,9 @@ synonyms or infer a match from the subject of the article.
 
 |---|---|---|---|
 
-| ferroptosis | | | |
+| ferroptosis |39265497 |39265497 |Same PMIDs | 
 
-| antibodies | | | |
+| antibodies |34421362 |34421362 |Same PMIDs |
 
-| oocytes | | | |
+| oocytes |38696471 |38696471 |Same PMIDs |
 
