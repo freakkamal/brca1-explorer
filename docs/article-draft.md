@@ -158,3 +158,23 @@ File checksums establish whether saved content matches a recorded digest;
 
 they do not establish whether a paper supports a scientific claim.
 
+
+
+\## Figure 1. From a comparison count to a saved passage
+
+
+
+!\[Panel A: Cezanne matched zero of ten baseline articles and one of ten comparison articles.](figures/figure-1a-comparison.png)
+
+
+
+!\[Panel B: The passage viewer shows PMID 41359628 and the saved text containing Cezanne.](figures/figure-1b-passage.png)
+
+
+
+Panel A shows the result for two saved BRCA1 bundles. Selecting the
+
+comparison passage link opens the article and matching text in Panel B
+
+while preserving the search term and bundle selection.
+
