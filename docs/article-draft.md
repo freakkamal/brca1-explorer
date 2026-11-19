@@ -127,3 +127,12 @@ Open http://127.0.0.1:8000/ in a browser.
 Reproducing the article's recorded search results requires the same saved evidence bundles and their referenced raw files. Running a new live retrieval may return different records or ordering. Imported summaries and review histories additionally require their corresponding saved files.
 
 These instructions describe the intended reproduction procedure. The completed fresh-environment check used existing project files on the author's PC, rather than a separate checkout.
+
+
+## Software and data availability
+
+The source code, tests, documentation, and commit history are stored in a private GitHub repository. The repository is not currently accessible to general readers.
+
+Saved source responses, evidence bundles, imported summaries, and review records are stored separately in the local data directory and backed up to an external drive. These files are excluded from Git tracking and are not included in the GitHub repository.
+
+Reproducing the exact reported evidence searches requires the original saved bundles and their referenced raw files. Retrieving new records from the source services may produce different results. A reader-accessible software and evidence package has not yet been released.
