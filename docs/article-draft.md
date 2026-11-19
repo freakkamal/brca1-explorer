@@ -93,3 +93,37 @@ On November 19, 2026, a separate Python virtual environment was created on the s
 The new environment reported no broken requirements. Running the full test suite with its Python interpreter produced 147 passed tests and one Starlette TestClient deprecation warning in 3.43 seconds.
 
 This check used the existing project files with freshly installed dependencies. It was not a fresh repository checkout, an independent reproduction, or a cross-platform test. It did not assess scientific accuracy.
+
+
+## Reproduction instructions
+
+The documented project snapshot is Git commit `d0a3790c82a9694b35bc2debff77c237ba9ed683`. The fresh-environment check described above used Python 3.13.16 on Windows.
+
+In a separate checkout of the repository, select this snapshot:
+
+```cmd
+git checkout --detach d0a3790c82a9694b35bc2debff77c237ba9ed683
+```
+
+From that checkout's root directory, create an environment using an installed Python 3.13 interpreter:
+
+```cmd
+py -3.13 -m venv .venv
+.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
+.venv\Scripts\python.exe -m pip check
+.venv\Scripts\python.exe -m pytest -q
+```
+
+The `py` command requires the Windows Python launcher. If it is unavailable, use the full path to an installed Python 3.13 executable for the environment-creation command.
+
+Start the local viewer with:
+
+```cmd
+.venv\Scripts\python.exe -m uvicorn app.main:app --reload
+```
+
+Open http://127.0.0.1:8000/ in a browser.
+
+Reproducing the article's recorded search results requires the same saved evidence bundles and their referenced raw files. Running a new live retrieval may return different records or ordering. Imported summaries and review histories additionally require their corresponding saved files.
+
+These instructions describe the intended reproduction procedure. The completed fresh-environment check used existing project files on the author's PC, rather than a separate checkout.
