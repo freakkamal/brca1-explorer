@@ -8,6 +8,17 @@ In a collection of 10 saved article titles and abstracts, manual review and the 
 
 These checks demonstrate traceability and literal search behavior in a small collection. They do not establish comprehensive literature retrieval, summary accuracy, or drug activity.
 
+## Introduction
+
+This project began with a practical question: how can a reader trace a research-summary statement back to the saved evidence used to produce it?
+
+I built BRCA1 Evidence Explorer as a local prototype for exploring that workflow. It retrieves source records, saves evidence snapshots, searches article titles and abstracts, and keeps manually imported AI summaries separate from retrieved evidence. Human review notes are attached to specific summary versions.
+
+The walkthrough focuses on one example: comparing two saved BRCA1 literature bundles, finding a Cezanne text match, and opening the saved passage behind that result. It also describes a small manual search evaluation and the software installation checks performed during development.
+
+The current application supports evidence inspection and review tracking. It does not predict compound activity, perform molecular docking, or establish treatment effectiveness.
+
+
 ## Methods
 
 ### Implementation and evidence tracking
@@ -29,6 +40,14 @@ Bundle filename: `brca1-cbbd29b367a3494db61bb4e1e2cdf07a.json`
 
 Bundle SHA-256: `0dc0f835f5afe0831d22f6653f22aca38a370b63ffa317bdb35d7598257698ed`
 
+The comparison demonstration also used the October 15, 2026 bundle, containing 10 saved articles.
+
+Baseline bundle filename: `brca1-1546dd5903e84e24a919b6f06e4ec17e.json`
+
+Baseline bundle SHA-256: `bd80cde89959a5c94afa715360c7ae09314463413ab1892eef114120a5640d61`
+
+The October 15 bundle was selected as the baseline and the October 18 bundle as the comparison.
+
 ### Manual and application searches
 
 Three terms were selected before comparing results: `ferroptosis`, `antibodies`, and `oocytes`. For each term, the project author inspected the saved titles and abstracts and recorded the PMID of each matching article. A match required the whole word, ignoring capitalization. An article counted once per term even if the word appeared several times. Synonyms, inferred topics, and text in the imported AI summary were excluded.
@@ -46,6 +65,8 @@ A separate demonstration used `Cezanne` and `Ube2S` to check how the application
 | ferroptosis | 39265497 | 39265497 |
 | antibodies | 34421362 | 34421362 |
 | oocytes | 38696471 | 38696471 |
+
+In the overlapping-term demonstration, Cezanne and Ube2S each matched one article, PMID 41359628. The combined results contained one distinct article and listed both matching terms. The additional query `zzzz-no-match-123` returned zero matches.
 
 A comparison of two saved bundles illustrates why the underlying snapshot matters. Cezanne matched no articles in the October 15 bundle and one of ten in the October 18 bundle (PMID 41359628). From the comparison page, the reader could open the matching bundle and inspect three saved passages.
 
@@ -136,3 +157,11 @@ The source code, tests, documentation, and commit history are stored in a privat
 Saved source responses, evidence bundles, imported summaries, and review records are stored separately in the local data directory and backed up to an external drive. These files are excluded from Git tracking and are not included in the GitHub repository.
 
 Reproducing the exact reported evidence searches requires the original saved bundles and their referenced raw files. Retrieving new records from the source services may produce different results. A reader-accessible software and evidence package has not yet been released.
+
+## What this prototype demonstrates and what comes next
+
+The demonstrated workflow connects a search result to a particular evidence snapshot and its saved source passages. It also separates imported AI interpretation from retrieved records and records which summary version a person reviewed.
+
+The small manual evaluation found matching PMID sets for three search terms. Automated tests and a fresh-environment installation check provide additional evidence about software behavior, but they do not establish scientific accuracy or general usefulness to researchers.
+
+The next development priorities are a shareable example dataset, an installation check by another person, and broader search evaluation. These steps would help determine whether the workflow remains understandable and reliable beyond the author's own environment.
