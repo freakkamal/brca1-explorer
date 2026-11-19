@@ -73,3 +73,14 @@ ChatGPT was used to assist with software development, troubleshooting, test draf
 Imported summaries are labelled as AI-generated interpretation and kept separate from retrieved evidence. Citation checks establish whether recognized PMIDs belong to the selected bundle; they do not establish that a cited article supports an associated claim.
 
 The small search evaluation reported here assesses literal matching behavior. It does not evaluate the scientific accuracy of AI-generated summaries. Human review remains necessary.
+
+
+## Software version and validation
+
+The project was checked on Windows using Python 3.13.16 at Git commit `4dbee82da66d3a62ae93231eb4693db6c89ce5bc`.
+
+The repository contains `requirements.txt` and `requirements-dev.txt`. Running `python -m pip check` in the project environment reported no broken requirements.
+
+The full automated test suite was run with `python -m pytest -q`: 147 tests passed, with one warning, in 2.95 seconds. The warning concerned deprecated use of httpx with Starlette's TestClient.
+
+These results describe the tested local environment. Passing software tests does not establish scientific accuracy, clinical validity, or compatibility with every operating system. Test execution time may differ on other machines.
