@@ -84,3 +84,12 @@ The repository contains `requirements.txt` and `requirements-dev.txt`. Running `
 The full automated test suite was run with `python -m pytest -q`: 147 tests passed, with one warning, in 2.95 seconds. The warning concerned deprecated use of httpx with Starlette's TestClient.
 
 These results describe the tested local environment. Passing software tests does not establish scientific accuracy, clinical validity, or compatibility with every operating system. Test execution time may differ on other machines.
+
+
+## Fresh-environment installation check
+
+On November 19, 2026, a separate Python virtual environment was created on the same Windows PC. Dependencies were installed from `requirements-dev.txt`, which includes `requirements.txt`.
+
+The new environment reported no broken requirements. Running the full test suite with its Python interpreter produced 147 passed tests and one Starlette TestClient deprecation warning in 3.43 seconds.
+
+This check used the existing project files with freshly installed dependencies. It was not a fresh repository checkout, an independent reproduction, or a cross-platform test. It did not assess scientific accuracy.
