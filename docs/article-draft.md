@@ -10,6 +10,17 @@ These checks demonstrate traceability and literal search behavior in a small col
 
 ## Methods
 
+### Implementation and evidence tracking
+
+BRCA1 Evidence Explorer is a local Python application with a FastAPI backend and browser pages. It retrieves BRCA1 identity records from NCBI Gene and UniProt, and literature records from PubMed. Raw responses are saved with SHA-256 hashes. Evidence bundles link the retrieved records to those saved responses.
+
+The application checks referenced raw files against the hashes recorded in the selected bundle before displaying or processing evidence. These checks detect differences from the recorded content; they do not verify scientific accuracy or authenticate the original source.
+
+Literature searches operate on saved titles and abstracts. Matching is case-insensitive and uses word boundaries around the supplied term. Synonyms and abbreviations are not automatically expanded. Multiple-term searches retain each article once in the combined results while listing its matching terms.
+
+AI summaries are imported manually and stored separately from retrieved evidence. Review records are linked to the exact summary version and evidence bundle using checksums. Each review records the reviewer name, decision, scope, checked PMIDs, notes, and timestamp. Reviewer identity and completion are self-reported.
+
+
 ### Evidence collection
 
 The evaluation used a saved BRCA1 literature bundle from October 18, 2026. The PubMed query was `BRCA1[Title/Abstract]`, ordered by relevance. At retrieval, the search reported 23,328 matching records; the bundle included 10. The evaluation used the saved titles and abstracts rather than rerunning the live PubMed query.
@@ -53,3 +64,12 @@ Literal search does not find synonyms unless the reader supplies them. File chec
 ![Panel B: The passage viewer shows PMID 41359628 and the saved text containing Cezanne.](figures/figure-1b-passage.png)
 
 Panel A shows the result for two saved BRCA1 bundles. Selecting the comparison passage link opens the article and matching text in Panel B while preserving the search term and bundle selection.
+
+
+## Use of AI assistance
+
+ChatGPT was used to assist with software development, troubleshooting, test drafting, documentation, and preparation of manually imported literature summaries. The application does not call an OpenAI API to generate summaries automatically.
+
+Imported summaries are labelled as AI-generated interpretation and kept separate from retrieved evidence. Citation checks establish whether recognized PMIDs belong to the selected bundle; they do not establish that a cited article supports an associated claim.
+
+The small search evaluation reported here assesses literal matching behavior. It does not evaluate the scientific accuracy of AI-generated summaries. Human review remains necessary.
