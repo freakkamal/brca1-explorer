@@ -2,7 +2,7 @@
 
 ## Abstract
 
-A reader inspecting an AI-generated research summary needs to know which source was used, what the source said, and which claims a person checked. We developed BRCA1 Evidence Explorer, a local research prototype that links saved literature records, manually imported AI summaries, and version-specific human review notes. The application lets a reader compare two saved literature collections and follow a search result to the passage that matched.
+A reader inspecting an AI-generated research summary needs to know which source was used, what the source said, and which claims a person checked. I developed BRCA1 Evidence Explorer, a local research prototype that links saved literature records, manually imported AI summaries, and version-specific human review notes. The application lets a reader compare two saved literature collections and follow a search result to the passage that matched.
 
 In a collection of 10 saved article titles and abstracts, manual review and the application returned identical PubMed identifier sets for three preselected whole-word searches: ferroptosis, antibodies, and oocytes. In a separate search, Cezanne and Ube2S matched the same article; the application displayed that article once and retained both matching terms.
 
@@ -115,8 +115,12 @@ The new environment reported no broken requirements. Running the full test suite
 
 This check used the existing project files with freshly installed dependencies. It was not a fresh repository checkout, an independent reproduction, or a cross-platform test. It did not assess scientific accuracy.
 
+After the original validation run, `httpx==0.28.1` was moved from the development requirements to the runtime requirements because the application uses it for source retrieval. The subsequent fresh-environment check used the revised dependency files. Commit `d0a3790c82a9694b35bc2debff77c237ba9ed683` records the later documented snapshot used in the reproduction instructions.
+
 
 ## Reproduction instructions
+
+These instructions currently apply to readers who have been granted repository access. Without the separately stored evidence files, readers cannot reproduce the illustrated evidence views. The screenshot in Panel B shows one of the three matching passages available in the application.
 
 The documented project snapshot is Git commit `d0a3790c82a9694b35bc2debff77c237ba9ed683`. The fresh-environment check described above used Python 3.13.16 on Windows.
 
