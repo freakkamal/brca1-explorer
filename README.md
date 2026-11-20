@@ -467,3 +467,26 @@ PubMed IDs. A search with no matches produces an empty results list.
 
 The search covers only titles and abstracts in the selected bundle.
 A text match does not establish that a compound acts on BRCA1.
+
+## Synthetic search demonstration
+
+From the project root, after installing the project dependencies, run:
+
+```cmd
+.venv\Scripts\python.exe -m app.demo_search
+```
+
+The demonstration creates two fictional records in a temporary directory and exercises the existing bundle verification and search functions. It makes no network requests and does not require saved research evidence.
+
+Expected results:
+
+- `amber`: one matching record.
+- `cobalt`: one matching record.
+- `zzzz-no-match-123`: zero matching records.
+- Combined results: one distinct record, retaining both matching terms.
+
+Numeric record IDs are placeholders, not PubMed citations. The example makes no scientific claims.
+
+On successful completion, the program prints `All demonstration checks passed.` Temporary files are removed automatically. The project's research data is unchanged.
+
+This is a command-line demonstration, not a browser demonstration.
