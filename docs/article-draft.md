@@ -169,3 +169,15 @@ The demonstrated workflow connects a search result to a particular evidence snap
 The small manual evaluation found matching PMID sets for three search terms. Automated tests and a fresh-environment installation check provide additional evidence about software behavior, but they do not establish scientific accuracy or general usefulness to researchers.
 
 The next development priorities are a shareable example dataset, an installation check by another person, and broader search evaluation. These steps would help determine whether the workflow remains understandable and reliable beyond the author's own environment.
+
+## Fresh GitHub checkout validation
+
+On 22 November 2026, I cloned the milestone-37-synthetic-demo branch into a separate directory on the same Windows PC and created a new Python virtual environment.
+
+The tested commit was `ea4932579d4a31f942014b2a04814134cf388623`.
+
+After installing the development requirements, the synthetic demonstration completed successfully. It confirmed a matching search, a zero-match search, and overlapping search terms counted as one distinct record. The demonstration used fictional records and removed its temporary files.
+
+The full automated test suite reported **147 passed, 1 warning in 6.13 seconds**. The warning concerned deprecated httpx usage by Starlette's test client.
+
+This check demonstrates that the tested GitHub checkout could run the synthetic example and automated tests in a fresh environment on the author's PC. It is not independent reproduction on another person's computer, and it does not validate scientific claims or reproduce the separately stored research evidence.
