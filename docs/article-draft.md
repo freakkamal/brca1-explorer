@@ -115,33 +115,53 @@ The new environment reported no broken requirements. Running the full test suite
 
 This check used the existing project files with freshly installed dependencies. It was not a fresh repository checkout, an independent reproduction, or a cross-platform test. It did not assess scientific accuracy.
 
-After the original validation run, `httpx==0.28.1` was moved from the development requirements to the runtime requirements because the application uses it for source retrieval. The subsequent fresh-environment check used the revised dependency files. Commit `d0a3790c82a9694b35bc2debff77c237ba9ed683` records the later documented snapshot used in the reproduction instructions.
+After the original validation run, `httpx==0.28.1` was moved from the development requirements to the runtime requirements because the application uses it for source retrieval. The subsequent fresh-environment check used the revised dependency files. Commit `d0a3790c82a9694b35bc2debff77c237ba9ed683` records that earlier documented snapshot. The reproduction instructions below now use the subsequently tested commit `ea4932579d4a31f942014b2a04814134cf388623`..
+
+## Fresh GitHub checkout validation
+
+On 22 November 2026, I cloned the milestone-37-synthetic-demo branch into a separate directory on the same Windows PC and created a new Python virtual environment.
+
+The tested commit was `ea4932579d4a31f942014b2a04814134cf388623`.
+
+After installing the development requirements, the synthetic demonstration completed successfully. It confirmed a matching search, a zero-match search, and overlapping search terms counted as one distinct record. The demonstration used fictional records and removed its temporary files.
+
+The full automated test suite reported **147 passed, 1 warning in 6.13 seconds**. The warning concerned deprecated httpx usage by Starlette's test client.
+
+This check demonstrates that the tested GitHub checkout could run the synthetic example and automated tests in a fresh environment on the author's PC. It is not independent reproduction on another person's computer, and it does not validate scientific claims or reproduce the separately stored research evidence.
 
 
 ## Reproduction instructions
 
-These instructions currently apply to readers who have been granted repository access. Without the separately stored evidence files, readers cannot reproduce the illustrated evidence views. The screenshot in Panel B shows one of the three matching passages available in the application.
+These instructions apply to readers with repository access. The tested snapshot is commit `ea4932579d4a31f942014b2a04814134cf388623`, which includes the synthetic search demonstration.
 
-The documented project snapshot is Git commit `d0a3790c82a9694b35bc2debff77c237ba9ed683`. The fresh-environment check described above used Python 3.13.16 on Windows.
-
-In a separate checkout of the repository, select this snapshot:
+In a separate checkout of the repository, select the tested version:
 
 ```cmd
-git checkout --detach d0a3790c82a9694b35bc2debff77c237ba9ed683
+git checkout --detach ea4932579d4a31f942014b2a04814134cf388623
 ```
 
-From that checkout's root directory, create an environment using an installed Python 3.13 interpreter:
+From that checkout's root directory, create a Python environment and install the dependencies:
 
 ```cmd
 py -3.13 -m venv .venv
 .venv\Scripts\python.exe -m pip install -r requirements-dev.txt
 .venv\Scripts\python.exe -m pip check
-.venv\Scripts\python.exe -m pytest -q
 ```
 
 The `py` command requires the Windows Python launcher. If it is unavailable, use the full path to an installed Python 3.13 executable for the environment-creation command.
 
-Start the local viewer with:
+Run the synthetic demonstration and automated tests:
+
+```cmd
+.venv\Scripts\python.exe -m app.demo_search
+.venv\Scripts\python.exe -m pytest -q
+```
+
+The demonstration creates two fictional records in a temporary directory. It checks matching, zero-match, and overlapping-term searches using the application's search functions. It requires no live source retrieval or saved research evidence. Its numeric record IDs are placeholders, not PubMed citations.
+
+Successful execution ends with `All demonstration checks passed.` The temporary demonstration files are removed.
+
+To start the browser viewer:
 
 ```cmd
 .venv\Scripts\python.exe -m uvicorn app.main:app --reload
@@ -149,9 +169,9 @@ Start the local viewer with:
 
 Open http://127.0.0.1:8000/ in a browser.
 
-Reproducing the article's recorded search results requires the same saved evidence bundles and their referenced raw files. Running a new live retrieval may return different records or ordering. Imported summaries and review histories additionally require their corresponding saved files.
+The synthetic demonstration runs in the command line and does not populate the browser viewer. Reproducing the article's screenshots requires the original saved evidence bundles and their referenced raw files. Imported summaries and review histories require their corresponding saved files.
 
-These instructions describe the intended reproduction procedure. The completed fresh-environment check used existing project files on the author's PC, rather than a separate checkout.
+A fresh GitHub checkout and new virtual environment were tested on the author's Windows PC, as described in the validation section. This was not independent reproduction by another person..
 
 
 ## Software and data availability
@@ -168,16 +188,7 @@ The demonstrated workflow connects a search result to a particular evidence snap
 
 The small manual evaluation found matching PMID sets for three search terms. Automated tests and a fresh-environment installation check provide additional evidence about software behavior, but they do not establish scientific accuracy or general usefulness to researchers.
 
-The next development priorities are a shareable example dataset, an installation check by another person, and broader search evaluation. These steps would help determine whether the workflow remains understandable and reliable beyond the author's own environment.
+A synthetic command-line demonstration now provides an example that can run without the separately stored research evidence. It checks software behavior using fictional records; it does not reproduce the scientific examples shown in this article.
 
-## Fresh GitHub checkout validation
+The next priorities are making the software and synthetic example accessible to readers, obtaining an installation check by another person, and broadening the search evaluation.
 
-On 22 November 2026, I cloned the milestone-37-synthetic-demo branch into a separate directory on the same Windows PC and created a new Python virtual environment.
-
-The tested commit was `ea4932579d4a31f942014b2a04814134cf388623`.
-
-After installing the development requirements, the synthetic demonstration completed successfully. It confirmed a matching search, a zero-match search, and overlapping search terms counted as one distinct record. The demonstration used fictional records and removed its temporary files.
-
-The full automated test suite reported **147 passed, 1 warning in 6.13 seconds**. The warning concerned deprecated httpx usage by Starlette's test client.
-
-This check demonstrates that the tested GitHub checkout could run the synthetic example and automated tests in a fresh environment on the author's PC. It is not independent reproduction on another person's computer, and it does not validate scientific claims or reproduce the separately stored research evidence.
