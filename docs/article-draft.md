@@ -132,7 +132,7 @@ This check demonstrates that the tested GitHub checkout could run the synthetic 
 
 ## Reproduction instructions
 
-These instructions apply to readers with repository access. The tested snapshot is commit `ea4932579d4a31f942014b2a04814134cf388623`, which includes the synthetic search demonstration.
+These instructions use the publicly available GitHub repository. The tested snapshot is commit `ea4932579d4a31f942014b2a04814134cf388623`, which includes the synthetic search demonstration.
 
 In a separate checkout of the repository, select the tested version:
 
@@ -176,11 +176,15 @@ A fresh GitHub checkout and new virtual environment were tested on the author's 
 
 ## Software and data availability
 
-The source code, tests, documentation, and commit history are stored in a private GitHub repository. The repository is not currently accessible to general readers.
+The source code, tests, documentation, and synthetic demonstration are publicly available on GitHub:
 
-Saved source responses, evidence bundles, imported summaries, and review records are stored separately in the local data directory and backed up to an external drive. These files are excluded from Git tracking and are not included in the GitHub repository.
+https://github.com/freakkamal/brca1-explorer/tree/milestone-37-synthetic-demo
 
-Reproducing the exact reported evidence searches requires the original saved bundles and their referenced raw files. Retrieving new records from the source services may produce different results. A reader-accessible software and evidence package has not yet been released.
+The tested version is commit `ea4932579d4a31f942014b2a04814134cf388623`. Readers can run its synthetic demonstration without the original research data.
+
+Saved source responses, evidence bundles, imported summaries, and review records remain separately stored and are not included in the repository. Reproducing the illustrated scientific examples requires those original files. New live retrievals may return different records or ordering.
+
+The synthetic demonstration uses fictional records to illustrate software behavior. It does not reproduce the scientific evidence shown in the screenshots..
 
 ## What this prototype demonstrates and what comes next
 
@@ -190,5 +194,5 @@ The small manual evaluation found matching PMID sets for three search terms. Aut
 
 A synthetic command-line demonstration now provides an example that can run without the separately stored research evidence. It checks software behavior using fictional records; it does not reproduce the scientific examples shown in this article.
 
-The next priorities are making the software and synthetic example accessible to readers, obtaining an installation check by another person, and broadening the search evaluation.
+The next priorities are improving the reader setup instructions, obtaining an installation check by another person, and broadening the search evaluation.
 
